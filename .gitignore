@@ -1,0 +1,19 @@
+# Companion app binaries
+companion/gearpath-companion
+companion/gearpath-companion.exe
+
+# Go build artifacts
+companion/vendor/
+
+# WoW saved variables
+*.wtf
+WTF/
+
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/
+
+# Packager output
+.release/
