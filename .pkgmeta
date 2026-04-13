@@ -1,6 +1,7 @@
 package-as: GearPath
 
-top-level: addon/GearPath
+move-folders:
+  addon/GearPath: GearPath
 
 externals:
   addon/GearPath/Libs/LibStub:
