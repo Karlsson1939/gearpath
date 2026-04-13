@@ -1,0 +1,1 @@
+-- GearPath: Detection.lua (stub)

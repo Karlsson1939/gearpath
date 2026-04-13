@@ -1,0 +1,1 @@
+-- GearPath: MinimapButton.lua (stub)
