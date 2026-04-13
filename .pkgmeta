@@ -1,5 +1,7 @@
 package-as: GearPath
 
+top-level: addon/GearPath
+
 externals:
   addon/GearPath/Libs/LibStub:
     url: https://repos.wowace.com/wow/libs/libstub/trunk
