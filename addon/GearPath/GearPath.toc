@@ -6,7 +6,7 @@
 ## SavedVariables: GearPathDB
 ## SavedVariablesPerCharacter: GearPathCharDB
 
-## X-Curse-Project-ID:
+## X-Curse-Project-ID: 1513108
 ## X-Wago-ID:
 
 # Libraries
