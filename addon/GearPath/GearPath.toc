@@ -1,0 +1,42 @@
+## Interface: 120001
+## Title: GearPath
+## Notes: Ranks content sources by how many BiS upgrades they contain for your spec.
+## Author: Tony
+## Version: 0.1.0
+## SavedVariables: GearPathDB
+## SavedVariablesPerCharacter: GearPathCharDB
+
+## X-Curse-Project-ID:
+## X-Wago-ID:
+
+# Libraries
+# Libs\LibStub\LibStub.lua
+# Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
+# Libs\AceAddon-3.0\AceAddon-3.0.lua
+# Libs\AceEvent-3.0\AceEvent-3.0.lua
+# Libs\AceDB-3.0\AceDB-3.0.lua
+# Libs\AceConsole-3.0\AceConsole-3.0.lua
+# Libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
+# Libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
+
+# Core
+Core.lua
+
+# Modules
+Modules\Detection.lua
+Modules\GearScanner.lua
+Modules\PriorityEngine.lua
+Modules\VaultAdvisor.lua
+
+# UI
+UI\MinimapButton.lua
+UI\MainFrame.lua
+UI\PriorityTab.lua
+UI\BiSTab.lua
+UI\VaultTab.lua
+UI\Config.lua
+
+# Data
+Data\SlotWeights.lua
+Data\Dungeons.lua
+Data\GearPath_Data.lua
