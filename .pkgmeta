@@ -1,8 +1,6 @@
 package-as: GearPath
 
 externals:
-  Libs/LibStub:
-    url: https://github.com/Nevcairiel/LibStub.git
   Libs/CallbackHandler-1.0:
     url: https://repos.curseforge.com/wow/callbackhandler/trunk/CallbackHandler-1.0
   Libs/AceAddon-3.0:
@@ -13,8 +11,6 @@ externals:
     url: https://repos.curseforge.com/wow/ace3/trunk/AceDB-3.0
   Libs/AceConsole-3.0:
     url: https://repos.curseforge.com/wow/ace3/trunk/AceConsole-3.0
-  Libs/LibDataBroker-1.1:
-    url: https://github.com/tekkub/libdatabroker-1-1.git
   Libs/LibDBIcon-1.0:
     url: https://repos.curseforge.com/wow/libdbicon-1-0/trunk/LibDBIcon-1.0
 
