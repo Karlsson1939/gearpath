@@ -1,0 +1,29 @@
+package-as: GearPath
+
+externals:
+  addon/GearPath/Libs/LibStub:
+    url: https://repos.wowace.com/wow/libs/libstub/trunk
+  addon/GearPath/Libs/CallbackHandler-1.0:
+    url: https://repos.wowace.com/wow/libs/callbackhandler/trunk
+  addon/GearPath/Libs/AceAddon-3.0:
+    url: https://repos.wowace.com/wow/libs/ace3/trunk
+    subdirectory: AceAddon-3.0
+  addon/GearPath/Libs/AceEvent-3.0:
+    url: https://repos.wowace.com/wow/libs/ace3/trunk
+    subdirectory: AceEvent-3.0
+  addon/GearPath/Libs/AceDB-3.0:
+    url: https://repos.wowace.com/wow/libs/ace3/trunk
+    subdirectory: AceDB-3.0
+  addon/GearPath/Libs/AceConsole-3.0:
+    url: https://repos.wowace.com/wow/libs/ace3/trunk
+    subdirectory: AceConsole-3.0
+  addon/GearPath/Libs/LibDataBroker-1.1:
+    url: https://repos.wowace.com/wow/libs/libdatabroker-1-1/trunk
+  addon/GearPath/Libs/LibDBIcon-1.0:
+    url: https://repos.wowace.com/wow/libs/libdbicon-1-0/trunk
+
+ignore:
+  - .pkgmeta
+  - .gitignore
+  - README.md
+  - companion
