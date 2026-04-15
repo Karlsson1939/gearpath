@@ -4,9 +4,8 @@
 GearPath.PriorityEngine = {}
 local PriorityEngine = GearPath.PriorityEngine
 
--- Results stored after last rebuild
 PriorityEngine.rankedSources = {}
-PriorityEngine.missingItems   = {}
+PriorityEngine.missingItems  = {}
 
 function PriorityEngine:Rebuild()
     self.rankedSources = {}
@@ -28,24 +27,20 @@ function PriorityEngine:Rebuild()
     local scanner     = GearPath.GearScanner
     local filters     = GearPath.db.profile.filters
 
-    -- Aggregate scores per source
     local sources = {}
 
     for slotID, bisItem in pairs(bisSet) do
-        -- Check filter
         if self:IsSourceAllowed(bisItem.sourceType, filters) then
             local status = self:GetSlotStatus(slotID, bisItem, scanner)
 
             if status == "MISSING" or status == "UPGRADEABLE" then
-                -- Get slot weight
                 local weight = (slotWeights and slotWeights[slotID])
                     or defaults[slotID]
                     or 1.0
 
                 local score = bisItem.priority * weight
-
-                -- Add to source bucket
                 local sourceKey = bisItem.source
+
                 if not sources[sourceKey] then
                     sources[sourceKey] = {
                         source     = sourceKey,
@@ -58,10 +53,10 @@ function PriorityEngine:Rebuild()
 
                 sources[sourceKey].score = sources[sourceKey].score + score
                 table.insert(sources[sourceKey].items, {
-                    slotID   = slotID,
-                    bisItem  = bisItem,
-                    status   = status,
-                    score    = score,
+                    slotID  = slotID,
+                    bisItem = bisItem,
+                    status  = status,
+                    score   = score,
                 })
 
                 table.insert(self.missingItems, {
@@ -73,9 +68,7 @@ function PriorityEngine:Rebuild()
         end
     end
 
-    -- Flatten and sort by score descending
     for _, sourceData in pairs(sources) do
-        -- Sort items within source by score descending
         table.sort(sourceData.items, function(a, b)
             return a.score > b.score
         end)
@@ -103,18 +96,9 @@ function PriorityEngine:GetSlotStatus(slotID, bisItem, scanner)
         return "IN_BAGS"
     end
 
-    -- Different item equipped — check if ilvl is significantly higher than BiS
-    -- Only consider "equipped" if item is 10+ ilvls above BiS (clearly better)
+    -- Different item but significantly higher ilvl — treat as effectively BiS
     if equipped and equipped.itemID and equipped.ilvl and equipped.ilvl >= (bisItem.ilvl + 10) then
         return "EQUIPPED"
-    end
-
-    return "MISSING"
-end
-
-    -- Check if BiS item is in bags
-    if bagged and bisItem.itemID and bisItem.itemID > 0 and bagged[bisItem.itemID] then
-        return "IN_BAGS"
     end
 
     return "MISSING"
@@ -136,10 +120,10 @@ function PriorityEngine:GetTop(n)
     for i = 1, math.min(n, #self.rankedSources) do
         local s = self.rankedSources[i]
         result[i] = {
-            name        = s.sourceName,
-            score       = s.score,
+            name         = s.sourceName,
+            score        = s.score,
             missingCount = #s.items,
-            items       = s.items,
+            items        = s.items,
         }
     end
     return result
