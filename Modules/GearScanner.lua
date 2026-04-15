@@ -8,19 +8,19 @@ local SLOT_NAMES = {
     [1]  = "Head",
     [2]  = "Neck",
     [3]  = "Shoulders",
-    [4]  = "Chest",
-    [5]  = "Waist",
-    [6]  = "Legs",
-    [7]  = "Feet",
-    [8]  = "Wrists",
-    [9]  = "Hands",
-    [10] = "Finger 1",
-    [11] = "Finger 2",
-    [12] = "Trinket 1",
-    [13] = "Trinket 2",
-    [14] = "Back",
-    [15] = "Main Hand",
-    [16] = "Off Hand",
+    [5]  = "Chest",
+    [6]  = "Waist",
+    [7]  = "Legs",
+    [8]  = "Feet",
+    [9]  = "Wrists",
+    [10] = "Hands",
+    [11] = "Finger 1",
+    [12] = "Finger 2",
+    [13] = "Trinket 1",
+    [14] = "Trinket 2",
+    [15] = "Back",
+    [16] = "Main Hand",
+    [17] = "Off Hand",
 }
 
 -- Equipment slot type IDs that we care about
@@ -119,7 +119,7 @@ end
 
 function GearScanner:PrintSummary()
     GearPath:Print("=== Equipped Gear ===")
-    for slotID = 1, 16 do
+    for slotID = 1, 17 do
         local slot = self.equipped[slotID]
         if slot then
             if slot.itemLink then
