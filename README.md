@@ -1,5 +1,7 @@
 # GearPath
 
+> ⚠️ **Work in progress** — GearPath is in active early development. Features are incomplete, BiS data only covers a subset of specs, and bugs are expected. Feedback and contributions welcome via GitHub Issues.
+
 A World of Warcraft addon for Midnight Season 1 that ranks content sources by how many BiS upgrades they contain for your class and spec.
 
 ## Supported specs (Season 1)
