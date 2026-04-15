@@ -93,12 +93,21 @@ function PriorityEngine:GetSlotStatus(slotID, bisItem, scanner)
     local equipped = scanner.equipped[slotID]
     local bagged   = scanner.bagged
 
-    -- Check if BiS item is equipped
-    if equipped and equipped.itemID and equipped.itemID == bisItem.itemID then
+    -- Check if BiS item is equipped by item ID
+    if equipped and equipped.itemID then
+        if equipped.itemID == bisItem.itemID then
+            -- Have the exact item — check if it's at a reasonable ilvl
+            -- We consider anything within 10 ilvls of base as equipped
+            if equipped.ilvl and equipped.ilvl >= (bisItem.ilvl - 10) then
+                return "EQUIPPED"
+            else
+                return "UPGRADEABLE"
+            end
+        end
+        -- Have a different item in this slot — check if it's higher ilvl than BiS base
+        -- If so, treat as equipped (player has something better or equivalent)
         if equipped.ilvl and equipped.ilvl >= bisItem.ilvl then
             return "EQUIPPED"
-        else
-            return "UPGRADEABLE"
         end
     end
 
