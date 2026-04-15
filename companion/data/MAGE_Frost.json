@@ -3,5 +3,22 @@
   "spec": "Frost",
   "season": "Midnight S1",
   "updated": "2026-04-15",
-  "items": []
+  "items": [
+    { "slotID": 1,  "itemID": 250060, "itemName": "Voidbreaker's Veil",         "source": "Voidspire",        "sourceType": "RAID",    "sourceName": "The Voidspire",       "bossName": null,             "ilvl": 252, "priority": 9,  "isTier": true  },
+    { "slotID": 2,  "itemID": 250247, "itemName": "Amulet of the Abyssal Hymn", "source": "MarchOnQueldanas", "sourceType": "RAID",    "sourceName": "March on Quel'Danas", "bossName": "Midnight Falls", "ilvl": 252, "priority": 8,  "isTier": false },
+    { "slotID": 3,  "itemID": 251085, "itemName": "Mantle of Dark Devotion",    "source": "MaisaraCaverns",   "sourceType": "DUNGEON", "sourceName": "Maisara Caverns",     "bossName": null,             "ilvl": 252, "priority": 8,  "isTier": false },
+    { "slotID": 5,  "itemID": 250063, "itemName": "Voidbreaker's Robe",         "source": "Voidspire",        "sourceType": "RAID",    "sourceName": "The Voidspire",       "bossName": null,             "ilvl": 252, "priority": 9,  "isTier": true  },
+    { "slotID": 6,  "itemID": 250057, "itemName": "Voidbreaker's Sage Cord",    "source": "Voidspire",        "sourceType": "RAID",    "sourceName": "The Voidspire",       "bossName": null,             "ilvl": 252, "priority": 7,  "isTier": true  },
+    { "slotID": 7,  "itemID": 250059, "itemName": "Voidbreaker's Britches",     "source": "Voidspire",        "sourceType": "RAID",    "sourceName": "The Voidspire",       "bossName": null,             "ilvl": 252, "priority": 9,  "isTier": true  },
+    { "slotID": 8,  "itemID": 249373, "itemName": "Dreamscorched Striders",     "source": "Dreamrift",        "sourceType": "RAID",    "sourceName": "Dreamrift",           "bossName": null,             "ilvl": 252, "priority": 7,  "isTier": false },
+    { "slotID": 9,  "itemID": 239648, "itemName": "Martyr's Bindings",          "source": "MarchOnQueldanas", "sourceType": "RAID",    "sourceName": "March on Quel'Danas", "bossName": null,             "ilvl": 252, "priority": 6,  "isTier": false },
+    { "slotID": 10, "itemID": 250061, "itemName": "Voidbreaker's Gloves",       "source": "Voidspire",        "sourceType": "RAID",    "sourceName": "The Voidspire",       "bossName": null,             "ilvl": 252, "priority": 9,  "isTier": true  },
+    { "slotID": 11, "itemID": 249920, "itemName": "Eye of Midnight",            "source": "MarchOnQueldanas", "sourceType": "RAID",    "sourceName": "March on Quel'Danas", "bossName": "L'ura",          "ilvl": 252, "priority": 7,  "isTier": false },
+    { "slotID": 12, "itemID": 249919, "itemName": "Sin'dorei Band of Hope",     "source": "MarchOnQueldanas", "sourceType": "RAID",    "sourceName": "March on Quel'Danas", "bossName": null,             "ilvl": 252, "priority": 7,  "isTier": false },
+    { "slotID": 13, "itemID": 249343, "itemName": "Gaze of the Alnseer",        "source": "Dreamrift",        "sourceType": "RAID",    "sourceName": "Dreamrift",           "bossName": "Chimaerus",      "ilvl": 252, "priority": 10, "isTier": false },
+    { "slotID": 14, "itemID": 249346, "itemName": "Vaelgor's Final Stare",      "source": "Voidspire",        "sourceType": "RAID",    "sourceName": "The Voidspire",       "bossName": "Vaelgor",        "ilvl": 252, "priority": 10, "isTier": false },
+    { "slotID": 15, "itemID": 258575, "itemName": "Rigid Scale Greatcloak",     "source": "MarchOnQueldanas", "sourceType": "RAID",    "sourceName": "March on Quel'Danas", "bossName": null,             "ilvl": 252, "priority": 6,  "isTier": false },
+    { "slotID": 16, "itemID": 258218, "itemName": "Skybreaker's Blade",         "source": "SeatOfTheTriumvirate", "sourceType": "DUNGEON", "sourceName": "Seat of the Triumvirate", "bossName": "Ranjit",    "ilvl": 252, "priority": 10, "isTier": false },
+    { "slotID": 17, "itemID": 245769, "itemName": "Aln'hara Lantern",           "source": "MarchOnQueldanas", "sourceType": "RAID",    "sourceName": "March on Quel'Danas", "bossName": null,             "ilvl": 252, "priority": 9,  "isTier": false }
+  ]
 }
