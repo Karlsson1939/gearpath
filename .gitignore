@@ -17,3 +17,6 @@ WTF/
 
 # Packager output
 .release/
+
+
+companion/data/sourcemap_midnight_s1.json
