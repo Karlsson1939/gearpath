@@ -28,6 +28,7 @@ import (
 type SpecData struct {
 	Class   string     `json:"class"`
 	Spec    string     `json:"spec"`
+	HeroKey string     `json:"heroKey"` // "any" or specific hero talent name (e.g. "Deathbringer")
 	Season  string     `json:"season"`
 	Updated string     `json:"updated"`
 	Items   []ItemData `json:"items"`
@@ -44,11 +45,27 @@ type ItemData struct {
 	Ilvl       int     `json:"ilvl"`
 	Priority   int     `json:"priority"`
 	IsTier     bool    `json:"isTier"`
+	HeroSpec   string  `json:"heroSpec,omitempty"` // "" = applies to all; else specific hero talent
 }
 
 type TemplateData struct {
 	Generated string
-	Specs     []SpecData
+	Groups    []SpecGroup
+}
+
+// SpecGroup aggregates all hero lists for one class+spec so the template can
+// emit a single Lua block per spec with nested hero keys.
+type SpecGroup struct {
+	Class  string
+	Spec   string
+	Season string
+	Heroes []HeroGroup
+}
+
+type HeroGroup struct {
+	HeroKey string
+	Updated string
+	Items   []ItemData
 }
 
 // ============================================================
@@ -60,9 +77,9 @@ type BlizzardToken struct {
 }
 
 type BlizzardItem struct {
-	ID    int    `json:"id"`
-	Name  string `json:"name"`
-	Level int    `json:"level"`
+	ID            int    `json:"id"`
+	Name          string `json:"name"`
+	Level         int    `json:"level"`
 	InventoryType struct {
 		Type string `json:"type"`
 		Name string `json:"name"`
@@ -176,34 +193,44 @@ var icyVeinsSlugs = map[string]string{
 	"WARRIOR_Protection":    "protection-warrior-pve-tank",
 }
 
-// icyVeinsSlotMap maps every slot label variant to our internal slot ID.
-// Pair-slot labels (ring, rings, trinket, trinkets, top trinkets) map to the
-// FIRST slot of the pair; the parser uses pairFallback for the second.
-var icyVeinsSlotMap = map[string]int{
-	// ── Main hand / weapons ───────────────────────────────────────────────────
-	"weapon":                       16,
-	"weapons":                      16,
-	"main hand":                    16,
-	"mainhand weapon":              16,
-	"one-handed weapon":            16,
-	"1h weapon":                    16,
-	"1h":                           16,
-	"2h weapon":                    16,
-	"2h":                           16,
-	"weapon (2h)":                  16,
-	"weapon (two-hand)":            16,
-	"weapon (main-hand/off-hand)":  16,
-	"weapon (staff)":               16,
-	"mainhand 1h weapon":           16,
-	"offhand 1h weapon":            17,
-	"sentinel weapon":              16, // Hunter Survival 2H fallback (no hero talent support yet)
-	"weapon main-hand":             16,
-	"weapons (dual wield)":         16,
-	"two-handed weapon":            16,
-	"two-handed mace":              16,
-	"staff":                        16,
+// heroTalentSplits declares specs where Icy Veins publishes fundamentally
+// different BiS lists per hero talent. These specs get one JSON file per
+// hero talent. The order of hero keys in the slice is the order we expect
+// them to appear on Icy Veins' page (used by the heading matcher as a hint
+// for error messages only — the actual matching is by heading text).
+var heroTalentSplits = map[string][]string{
+	"DEATHKNIGHT_Blood": {"San'layn", "Deathbringer"},
+}
 
-	// ── Off hand ─────────────────────────────────────────────────────────────
+// ============================================================
+// Icy Veins slot parsing maps
+// ============================================================
+
+var icyVeinsSlotMap = map[string]int{
+	// Main hand / weapons
+	"weapon":                      16,
+	"weapons":                     16,
+	"main hand":                   16,
+	"mainhand weapon":             16,
+	"one-handed weapon":           16,
+	"1h weapon":                   16,
+	"1h":                          16,
+	"2h weapon":                   16,
+	"2h":                          16,
+	"weapon (2h)":                 16,
+	"weapon (two-hand)":           16,
+	"weapon (main-hand/off-hand)": 16,
+	"weapon (staff)":              16,
+	"mainhand 1h weapon":          16,
+	"offhand 1h weapon":           17,
+	"sentinel weapon":             16,
+	"weapon main-hand":            16,
+	"weapons (dual wield)":        16,
+	"two-handed weapon":           16,
+	"two-handed mace":             16,
+	"staff":                       16,
+
+	// Off hand
 	"off hand":        17,
 	"off-hand":        17,
 	"offhand":         17,
@@ -212,7 +239,7 @@ var icyVeinsSlotMap = map[string]int{
 	"weapon off-hand": 17,
 	"shield":          17,
 
-	// ── Armour ───────────────────────────────────────────────────────────────
+	// Armour
 	"helm":      1,
 	"helmet":    1,
 	"head":      1,
@@ -237,7 +264,7 @@ var icyVeinsSlotMap = map[string]int{
 	"boots":     8,
 	"feet":      8,
 
-	// ── Rings — numbered ─────────────────────────────────────────────────────
+	// Rings — numbered
 	"ring #1":   11,
 	"ring #2":   12,
 	"ring 1":    11,
@@ -247,35 +274,32 @@ var icyVeinsSlotMap = map[string]int{
 	"finger 1":  11,
 	"finger 2":  12,
 
-	// ── Rings — unnumbered / plural (first → 11, second → 12 via pairFallback)
+	// Rings — unnumbered / plural
 	"ring":  11,
 	"rings": 11,
 
-	// ── Trinkets — numbered ───────────────────────────────────────────────────
+	// Trinkets — numbered
 	"trinket #1": 13,
 	"trinket #2": 14,
 	"trinket 1":  13,
 	"trinket 2":  14,
 
-	// ── Trinkets — unnumbered / plural (first → 13, second → 14) ─────────────
+	// Trinkets — unnumbered / plural
 	"trinket":      13,
 	"trinkets":     13,
-	"top trinkets": 13, // multi-item cell: both trinkets listed; handled specially
+	"top trinkets": 13,
 }
 
-// pairFallback maps a slot to its pair when the first is already taken.
 var pairFallback = map[int]int{
 	11: 12,
 	13: 14,
 }
 
-// multiItemSlots: these label a cell that contains BOTH items of a pair,
-// space-separated. We extract the first two and assign to slots 11+12 or 13+14.
 var multiItemSlots = map[string]bool{
 	"rings":        true,
 	"top trinkets": true,
-	"trinkets":     true, // single row listing both trinkets (e.g. Brewmaster, Holy Priest)
-	"trinket":      true, // same pattern, singular label
+	"trinkets":     true,
+	"trinket":      true,
 }
 
 // ============================================================
@@ -618,6 +642,20 @@ func slugify(s string) string {
 	return strings.NewReplacer(" ", "", "'", "", "-", "", ".", "").Replace(strings.ToLower(s))
 }
 
+// slugifyHero normalises a hero talent name for use as a filename component.
+// Apostrophes and spaces are stripped; the result is filesystem-safe.
+//   "any"         → "any"
+//   "San'layn"    → "Sanlayn"
+//   "Pack Leader" → "PackLeader"
+func slugifyHero(hero string) string {
+	return strings.NewReplacer("'", "", " ", "", "-", "").Replace(hero)
+}
+
+// buildDataFilename produces the canonical data JSON path for a spec+hero combo.
+func buildDataFilename(class, spec, heroKey string) string {
+	return fmt.Sprintf("data/%s_%s_%s.json", class, spec, slugifyHero(heroKey))
+}
+
 // ============================================================
 // Main
 // ============================================================
@@ -677,22 +715,22 @@ func main() {
 				os.Exit(1)
 			}
 			return
-			case "scrape-guide":
-				target := ""
-				if len(os.Args) > 2 {
-					target = os.Args[2]
-				}
-				if err := scrapeGuideAll(target); err != nil {
-					fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-					os.Exit(1)
-				}
-				return
-			case "generate-guide":
-				if err := generateGuide(); err != nil {
-					fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-					os.Exit(1)
-				}
-				return
+		case "scrape-guide":
+			target := ""
+			if len(os.Args) > 2 {
+				target = os.Args[2]
+			}
+			if err := scrapeGuideAll(target); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				os.Exit(1)
+			}
+			return
+		case "generate-guide":
+			if err := generateGuide(); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				os.Exit(1)
+			}
+			return
 		}
 	}
 
@@ -724,7 +762,7 @@ func main() {
 			fmt.Println("\nGoodbye!")
 			return
 		}
-		editSpec(reader, blizzard, s.Class, s.Spec)
+		editSpec(reader, blizzard, s.Class, s.Spec, s.HeroKey)
 	}
 }
 
@@ -812,6 +850,41 @@ func debugEncounter() error {
 // Scrape
 // ============================================================
 
+// scrapeTarget is one unit of scrape work: a spec + hero key combination.
+// For non-split specs, HeroKey is "any". For split specs (e.g. Blood DK),
+// there's one target per hero talent.
+type scrapeTarget struct {
+	Class   string
+	Spec    string
+	HeroKey string // "any" or specific hero talent name
+}
+
+// expandScrapeTargets produces the full list of {class, spec, heroKey} combos
+// to scrape. Common specs → one target with heroKey="any". Split specs →
+// one target per hero talent.
+func expandScrapeTargets() []scrapeTarget {
+	var targets []scrapeTarget
+	for _, s := range allSpecs {
+		specKey := s.Class + "_" + s.Spec
+		if heroes, split := heroTalentSplits[specKey]; split {
+			for _, hero := range heroes {
+				targets = append(targets, scrapeTarget{
+					Class:   s.Class,
+					Spec:    s.Spec,
+					HeroKey: hero,
+				})
+			}
+			continue
+		}
+		targets = append(targets, scrapeTarget{
+			Class:   s.Class,
+			Spec:    s.Spec,
+			HeroKey: "any",
+		})
+	}
+	return targets
+}
+
 func scrapeAll(target string, blizzard *BlizzardClient) error {
 	fmt.Println("Starting headless browser...")
 
@@ -831,50 +904,66 @@ func scrapeAll(target string, blizzard *BlizzardClient) error {
 	if err := chromedp.Run(browserCtx, chromedp.Navigate("about:blank")); err != nil {
 		return fmt.Errorf("failed to start browser: %w", err)
 	}
-	fmt.Println("Browser ready.\n")
+	fmt.Println("Browser ready.")
+	fmt.Println()
 
 	today := time.Now().Format("2006-01-02")
 	fetched, failed, skipped := 0, 0, 0
 
-	for _, s := range allSpecs {
-		key := s.Class + "_" + s.Spec
-		if target != "" && key != target {
+	// For split specs we cache the scraped page so we only hit Icy Veins once
+	// per spec even though we emit multiple targets from it.
+	type pageCache struct {
+		tables []scrapedTable
+	}
+	splitPageCache := map[string]*pageCache{}
+
+	targets := expandScrapeTargets()
+
+	for _, t := range targets {
+		specKey := t.Class + "_" + t.Spec
+		fullKey := specKey + "_" + t.HeroKey
+
+		// Target filter accepts "CLASS_Spec" (all heroes) or "CLASS_Spec_Hero"
+		if target != "" && target != specKey && target != fullKey {
 			continue
 		}
 
-		slug, ok := icyVeinsSlugs[key]
+		slug, ok := icyVeinsSlugs[specKey]
 		if !ok {
-			fmt.Printf("  No slug for %s — skipping\n", key)
+			fmt.Printf("  No slug for %s — skipping\n", specKey)
 			skipped++
 			continue
 		}
 
+		label := fmt.Sprintf("%s %s", t.Class, t.Spec)
+		if t.HeroKey != "any" {
+			label += " (" + t.HeroKey + ")"
+		}
+		fmt.Printf("Scraping %-45s ... ", label)
+
 		pageURL := fmt.Sprintf("https://www.icy-veins.com/wow/%s-gear-best-in-slot", slug)
-		fmt.Printf("Scraping %-14s %-14s ... ", s.Class, s.Spec)
 
-		pageCtx, pageCancel := context.WithTimeout(browserCtx, 30*time.Second)
+		// Fetch tables (with headings) from the page. Cache for split specs.
+		var tables []scrapedTable
+		if cached, ok := splitPageCache[specKey]; ok {
+			tables = cached.tables
+		} else {
+			var err error
+			tables, err = fetchPageTables(browserCtx, pageURL)
+			if err != nil {
+				fmt.Printf("FAILED (browser: %v)\n", err)
+				failed++
+				continue
+			}
+			if _, isSplit := heroTalentSplits[specKey]; isSplit {
+				splitPageCache[specKey] = &pageCache{tables: tables}
+			}
+		}
 
-		var tableData string
-		err := chromedp.Run(pageCtx,
-			chromedp.Navigate(pageURL),
-			chromedp.WaitVisible(`table tr`, chromedp.ByQuery),
-			chromedp.Sleep(500*time.Millisecond),
-			chromedp.Evaluate(`
-				(function() {
-					const t = document.querySelector('table');
-					if (!t) return '';
-					return Array.from(t.querySelectorAll('tr'))
-						.map(r => Array.from(r.querySelectorAll('td,th'))
-							.map(c => c.innerText.trim().replace(/\n+/g, ' '))
-							.join('\t'))
-						.join('\n');
-				})()
-			`, &tableData),
-		)
-		pageCancel()
-
-		if err != nil {
-			fmt.Printf("FAILED (browser: %v)\n", err)
+		// Pick the right table for this target.
+		tableData, pickErr := pickTableForTarget(tables, t)
+		if pickErr != nil {
+			fmt.Printf("FAILED (%v)\n", pickErr)
 			failed++
 			continue
 		}
@@ -895,14 +984,15 @@ func scrapeAll(target string, blizzard *BlizzardClient) error {
 		fmt.Printf("%d items saved\n", len(items))
 
 		specData := SpecData{
-			Class:   s.Class,
-			Spec:    s.Spec,
+			Class:   t.Class,
+			Spec:    t.Spec,
+			HeroKey: t.HeroKey,
 			Season:  "Midnight S1",
 			Updated: today,
 			Items:   items,
 		}
 
-		filename := fmt.Sprintf("data/%s_%s.json", s.Class, s.Spec)
+		filename := buildDataFilename(t.Class, t.Spec, t.HeroKey)
 		data, _ := json.MarshalIndent(specData, "", "  ")
 		if err := os.WriteFile(filename, data, 0644); err != nil {
 			fmt.Printf("FAILED (write: %v)\n", err)
@@ -911,7 +1001,10 @@ func scrapeAll(target string, blizzard *BlizzardClient) error {
 		}
 
 		fetched++
-		time.Sleep(800 * time.Millisecond)
+		// Only rate-limit between page fetches, not between cached-table reads.
+		if _, wasCached := splitPageCache[specKey]; !wasCached || len(splitPageCache[specKey].tables) == 0 {
+			time.Sleep(800 * time.Millisecond)
+		}
 	}
 
 	fmt.Printf("\nDone. Scraped: %d, Failed: %d, Skipped: %d\n", fetched, failed, skipped)
@@ -929,7 +1022,166 @@ func scrapeAll(target string, blizzard *BlizzardClient) error {
 	return nil
 }
 
-// parseIcyVeinsTable parses the tab-separated rows from the first BiS table.
+// scrapedTable is a table from a BiS page, paired with contextual hints that
+// help us identify which hero talent it belongs to.
+//
+// For Icy Veins BiS pages, each list lives inside a <div id="area_N"> and the
+// header block above them (<div class="image_block_header">) contains the
+// human-readable tab labels in matching order — so we capture both pieces
+// and reconcile them.
+type scrapedTable struct {
+	AreaID string // e.g. "area_1" — the containing div's id, or "" for non-area tables
+	Label  string // e.g. "BiS Raid (San'layn)" — tab label matched to AreaID, or ""
+	TSV    string // tab-separated row data
+}
+
+// fetchPageTables navigates to pageURL, extracts every BiS table on the page,
+// and pairs each with its area_N id and the corresponding tab label.
+//
+// The mapping is: each <div id="area_N"> contains one BiS table. The
+// <div class="image_block_header"> that sits alongside those areas contains
+// the tab labels in the same order — so area_1's label is the first label,
+// area_2's is the second, etc.
+func fetchPageTables(browserCtx context.Context, pageURL string) ([]scrapedTable, error) {
+	pageCtx, pageCancel := context.WithTimeout(browserCtx, 30*time.Second)
+	defer pageCancel()
+
+	var rawJSON string
+	err := chromedp.Run(pageCtx,
+		chromedp.Navigate(pageURL),
+		chromedp.WaitVisible(`table tr`, chromedp.ByQuery),
+		chromedp.Sleep(500*time.Millisecond),
+		chromedp.Evaluate(`
+			(function() {
+				function tableToTSV(t) {
+					return Array.from(t.querySelectorAll('tr'))
+						.map(r => Array.from(r.querySelectorAll('td,th'))
+							.map(c => c.innerText.trim().replace(/\n+/g, ' '))
+							.join('\t'))
+						.join('\n');
+				}
+
+				const results = [];
+
+				// Primary path: gear BiS tables live inside <div id="area_N"> within
+				// a <div class="image_block">. Each area has a matching tab button
+				// <span id="area_N_button"> whose text is the tab's human-readable
+				// label. We pair them by id, not by position — so reordering, extra
+				// sections, or new blocks never cause mismatches.
+				const blocks = document.querySelectorAll('div.image_block');
+				blocks.forEach(block => {
+					const areas = block.querySelectorAll('div[id^="area_"]');
+					areas.forEach(area => {
+						const table = area.querySelector('table');
+						if (!table) return;
+
+						// Find the matching button by id: area_N  →  area_N_button.
+						const btn = block.querySelector('#' + area.id + '_button');
+						const label = btn ? btn.innerText.trim() : '';
+
+						results.push({
+							areaId: area.id,
+							label:  label,
+							tsv:    tableToTSV(table),
+						});
+					});
+				});
+
+				// Fallback path: pages without the image_block/area_N structure
+				// (i.e. every common spec) get their tables enumerated as-is, with
+				// no areaId/label. This preserves the original behaviour for the
+				// ~38 non-split specs.
+				if (results.length === 0) {
+					const loose = document.querySelectorAll('table');
+					loose.forEach(t => {
+						// Skip tables inside trinket ranking dropdowns — they're not BiS.
+						if (t.closest('details.trinket-dropdown')) return;
+						results.push({ areaId: '', label: '', tsv: tableToTSV(t) });
+					});
+				}
+
+				return JSON.stringify(results);
+			})()
+		`, &rawJSON),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	var raw []struct {
+		AreaID string `json:"areaId"`
+		Label  string `json:"label"`
+		TSV    string `json:"tsv"`
+	}
+	if err := json.Unmarshal([]byte(rawJSON), &raw); err != nil {
+		return nil, fmt.Errorf("parse tables JSON: %w", err)
+	}
+
+	tables := make([]scrapedTable, 0, len(raw))
+	for _, r := range raw {
+		tables = append(tables, scrapedTable{
+			AreaID: r.AreaID,
+			Label:  r.Label,
+			TSV:    r.TSV,
+		})
+	}
+	return tables, nil
+}
+
+// pickTableForTarget selects the right table for a scrape target.
+//
+// Common specs (HeroKey="any"): returns the first non-empty table, which
+// matches the original scraper behaviour. For pages with area_N blocks,
+// this is area_1 (the first/default BiS list); for other pages, it's the
+// first table on the page.
+//
+// Split specs: matches the hero talent name against tab labels (e.g.
+// "BiS Raid (San'layn)") with apostrophe- and case-insensitive comparison.
+// Fails loudly with the labels we did find, so a scraper break is easy to
+// diagnose.
+func pickTableForTarget(tables []scrapedTable, t scrapeTarget) (string, error) {
+	if len(tables) == 0 {
+		return "", fmt.Errorf("no tables on page")
+	}
+
+	if t.HeroKey == "any" {
+		for _, tbl := range tables {
+			if strings.TrimSpace(tbl.TSV) != "" {
+				return tbl.TSV, nil
+			}
+		}
+		return "", fmt.Errorf("all tables empty")
+	}
+
+	// Split spec: match against the tab label.
+	// Normalise both sides: strip apostrophes, lowercase.
+	normalise := func(s string) string {
+		return strings.ToLower(strings.ReplaceAll(s, "'", ""))
+	}
+	want := normalise(t.HeroKey)
+
+	for _, tbl := range tables {
+		if tbl.Label != "" && strings.Contains(normalise(tbl.Label), want) &&
+			strings.TrimSpace(tbl.TSV) != "" {
+			return tbl.TSV, nil
+		}
+	}
+
+	// Nothing matched — show what we actually saw so the user can update
+	// heroTalentSplits or the scraper if Icy Veins changed its markup.
+	seen := make([]string, 0, len(tables))
+	for _, tbl := range tables {
+		if tbl.Label != "" {
+			seen = append(seen, fmt.Sprintf("%s=%q", tbl.AreaID, tbl.Label))
+		} else if tbl.AreaID != "" {
+			seen = append(seen, fmt.Sprintf("%s=(unlabelled)", tbl.AreaID))
+		}
+	}
+	return "", fmt.Errorf("no table found matching %q; saw: %s",
+		t.HeroKey, strings.Join(seen, ", "))
+}
+
+// parseIcyVeinsTable parses the tab-separated rows from a BiS table.
 //
 // Normal rows: SlotLabel \t ItemName \t Source
 //
@@ -997,8 +1249,7 @@ func parseIcyVeinsTable(tableData string, blizzard *BlizzardClient) []ItemData {
 			continue
 		}
 
-		// ── Multi-item pair cells (Rings / Top Trinkets) ──────────────────────
-		// These contain both items for a pair, space-separated. Extract first two.
+		// Multi-item pair cells (Rings / Top Trinkets)
 		if multiItemSlots[slotKey] {
 			baseSlot, ok := icyVeinsSlotMap[slotKey]
 			if !ok {
@@ -1019,8 +1270,7 @@ func parseIcyVeinsTable(tableData string, blizzard *BlizzardClient) []ItemData {
 			continue
 		}
 
-		// ── Weapon cells with (1H) and (OH) markers ───────────────────────────
-		// e.g. "Ceremonial Hexblade (1H)  Grimoire of the Eternal Light (OH)"
+		// Weapon cells with (1H) and (OH) markers
 		if slotKey == "weapons" && strings.Contains(rawCell, "(1H)") {
 			if !seen[16] {
 				if n := extractMarkedWeapon(rawCell, "(1H)"); n != "" {
@@ -1035,13 +1285,13 @@ func parseIcyVeinsTable(tableData string, blizzard *BlizzardClient) []ItemData {
 			continue
 		}
 
-		// ── Normal single-slot row ────────────────────────────────────────────
+		// Normal single-slot row
 		slotID, ok := icyVeinsSlotMap[slotKey]
 		if !ok {
 			continue
 		}
 
-		// Pair fallback for unlabelled repeated slots (Ring/Ring, Trinkets/Trinkets)
+		// Pair fallback for unlabelled repeated slots
 		if seen[slotID] {
 			if fallback, hasFallback := pairFallback[slotID]; hasFallback && !seen[fallback] {
 				slotID = fallback
@@ -1066,13 +1316,7 @@ func parseIcyVeinsTable(tableData string, blizzard *BlizzardClient) []ItemData {
 }
 
 // splitMultiItems splits a multi-item cell into individual item names.
-// Icy Veins separates them with 2+ spaces (collapsed from newlines).
 func splitMultiItems(cell string) []string {
-	// Split on two or more consecutive spaces
-	parts := strings.FieldsFunc(cell, func(r rune) bool { return false })
-	_ = parts
-
-	// Use double-space as separator
 	raw := strings.Split(cell, "  ")
 	var result []string
 	for _, p := range raw {
@@ -1090,9 +1334,7 @@ func extractMarkedWeapon(cell, marker string) string {
 	if idx < 0 {
 		return ""
 	}
-	// Find the start of this item name by scanning backwards from the marker
 	before := strings.TrimSpace(cell[:idx])
-	// The item name is the last token before the marker (after any double-space separator)
 	parts := strings.Split(before, "  ")
 	last := strings.TrimSpace(parts[len(parts)-1])
 	return cleanItemName(last)
@@ -1119,39 +1361,27 @@ func isSkippedRow(slotKey string) bool {
 	return false
 }
 
-// cleanItemName strips noise from item names:
-//   - " with <embellishment>" suffixes
-//   - "(TIER SET)", "(Crit/Haste)", "(1H)", "(OH)", "(2H)", "(Staff)" etc.
-//   - ", or <alternative>" text
-//   - Double-space separated alternatives (take first)
-//   - Advisory rows starting with "Your "
+// cleanItemName strips noise from item names.
 func cleanItemName(name string) string {
-	// Skip advisory rows
 	if strings.HasPrefix(strings.ToLower(strings.TrimSpace(name)), "your ") {
 		return ""
 	}
-	// Strip "BiS -> " navigation prefix — keep the actual item name after it
 	trimmed := strings.TrimSpace(name)
 	if strings.HasPrefix(strings.ToLower(trimmed), "bis -> ") {
 		name = trimmed[7:]
 	}
-	// Strip " with ..." BEFORE double-space split (some cells have "Item with  Embellishment")
 	if idx := strings.Index(name, " with "); idx > 0 {
 		name = name[:idx]
 	}
-	// Strip ", or <alternative>"
 	if idx := strings.Index(name, ", or"); idx > 0 {
 		name = name[:idx]
 	}
-	// Strip trailing parenthetical suffixes like "(TIER SET)", "(1H)", "(Crit/Haste)"
 	if idx := strings.Index(name, " ("); idx > 0 {
 		name = name[:idx]
 	}
-	// Take only up to first double-space (multi-item cells, after above strips)
 	if idx := strings.Index(name, "  "); idx > 0 {
 		name = name[:idx]
 	}
-	// Strip newlines
 	if idx := strings.Index(name, "\n"); idx > 0 {
 		name = name[:idx]
 	}
@@ -1172,8 +1402,6 @@ type knownItemDef struct {
 }
 
 var knownItems = map[string]knownItemDef{
-
-	// ── Crafted ──────────────────────────────────────────────────────────────
 
 	// Blacksmithing
 	"Spellbreaker's Bracers":      {id: 237834, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
@@ -1209,18 +1437,15 @@ var knownItems = map[string]knownItemDef{
 	"Masterwork Sin'dorei Amulet": {id: 240950, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
 	"Masterwork Sin'dorei Band":   {id: 240949, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
 
-	// ── March on Quel'Danas drops ────────────────────────────────────────────
-
+	// March on Quel'Danas drops
 	"Amulet of the Abyssal Hymn": {id: 250247, sourceType: "RAID", sourceName: "March on Quel'Danas", source: "marchonqueldanas", bossName: "Midnight Falls"},
 	"Sin'dorei Band of Hope":     {id: 249919, sourceType: "RAID", sourceName: "March on Quel'Danas", source: "marchonqueldanas", bossName: "Child of Belo'ren"},
 
-	// ── The Voidspire drops ──────────────────────────────────────────────────
-
+	// The Voidspire drops
 	"Fallen King's Cuffs":           {id: 249304, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", bossName: "Fallen-King Salhadaar"},
 	"Grimoire of the Eternal Light": {id: 249276, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", bossName: "Vorasius"},
 
-	// ── Death Knight — Relentless Rider's Lament ─────────────────────────────
-
+	// Death Knight — Relentless Rider's Lament
 	"Relentless Rider's Crown":       {id: 249970, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Relentless Rider's Dreadthorns": {id: 249971, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Relentless Rider's Cuirass":     {id: 249973, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
@@ -1228,8 +1453,7 @@ var knownItems = map[string]knownItemDef{
 	"Relentless Rider's Legguards":   {id: 249972, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Relentless Rider's Chain":       {id: 249969, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: false},
 
-	// ── Demon Hunter — Devouring Reaver's Sheathe ────────────────────────────
-
+	// Demon Hunter — Devouring Reaver's Sheathe
 	"Devouring Reaver's Intake":          {id: 250033, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Devouring Reaver's Exhaustplates":   {id: 250031, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Devouring Reaver's Engine":          {id: 250036, sourceType: "RAID", sourceName: "The Dreamrift", source: "thedreamrift", isTier: true},
@@ -1237,8 +1461,7 @@ var knownItems = map[string]knownItemDef{
 	"Devouring Reaver's Pistons":         {id: 250032, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Devouring Reaver's Soul Flatteners": {id: 250035, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: false},
 
-	// ── Druid — Sprouts of the Luminous Bloom ────────────────────────────────
-
+	// Druid — Sprouts of the Luminous Bloom
 	"Branches of the Luminous Bloom":     {id: 250024, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Seedpods of the Luminous Bloom":     {id: 250022, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Trunk of the Luminous Bloom":        {id: 250027, sourceType: "RAID", sourceName: "The Dreamrift", source: "thedreamrift", isTier: true},
@@ -1246,8 +1469,7 @@ var knownItems = map[string]knownItemDef{
 	"Phloemwraps of the Luminous Bloom":  {id: 250023, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Leafdrape of the Luminous Bloom":    {id: 250019, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: false},
 
-	// ── Evoker — Livery of the Black Talon ───────────────────────────────────
-
+	// Evoker — Livery of the Black Talon
 	"Hornhelm of the Black Talon":         {id: 249997, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Beacons of the Black Talon":          {id: 249995, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Frenzyward of the Black Talon":       {id: 249993, sourceType: "RAID", sourceName: "The Dreamrift", source: "thedreamrift", isTier: true},
@@ -1255,15 +1477,13 @@ var knownItems = map[string]knownItemDef{
 	"Greaves of the Black Talon":          {id: 249996, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Spelltreads of the Black Talon":      {id: 249999, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: false},
 
-	// ── Hunter — Primal Sentry's Camouflage ──────────────────────────────────
-
+	// Hunter — Primal Sentry's Camouflage
 	"Primal Sentry's Maw":         {id: 249988, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Primal Sentry's Scaleplate":  {id: 249991, sourceType: "RAID", sourceName: "The Dreamrift", source: "thedreamrift", isTier: true},
 	"Primal Sentry's Talonguards": {id: 249989, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Primal Sentry's Legguards":   {id: 249987, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 
-	// ── Mage — Voidbreaker's Accordance ──────────────────────────────────────
-
+	// Mage — Voidbreaker's Accordance
 	"Voidbreaker's Veil":         {id: 249985, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Voidbreaker's Leyline Nexi": {id: 249983, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Voidbreaker's Robe":         {id: 249986, sourceType: "RAID", sourceName: "The Dreamrift", source: "thedreamrift", isTier: true},
@@ -1272,8 +1492,7 @@ var knownItems = map[string]knownItemDef{
 	"Voidbreaker's Sage Cord":    {id: 250057, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: false},
 	"Voidbreaker's Treads":       {id: 249982, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: false},
 
-	// ── Monk — Way of Ra-den's Chosen ────────────────────────────────────────
-
+	// Monk — Way of Ra-den's Chosen
 	"Fearsome Visage of Ra-den's Chosen": {id: 250015, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Aurastones of Ra-den's Chosen":      {id: 250013, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Battle Garb of Ra-den's Chosen":     {id: 250018, sourceType: "RAID", sourceName: "The Dreamrift", source: "thedreamrift", isTier: true},
@@ -1283,8 +1502,7 @@ var knownItems = map[string]knownItemDef{
 	"Strikeguards of Ra-den's Chosen":    {id: 250019, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: false},
 	"Windwrap of Ra-den's Chosen":        {id: 250020, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: false},
 
-	// ── Paladin — Luminant Verdict's Vestments ───────────────────────────────
-
+	// Paladin — Luminant Verdict's Vestments
 	"Luminant Verdict's Unwavering Gaze":  {id: 249961, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Luminant Verdict's Providence Watch": {id: 249959, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Luminant Verdict's Divine Warplate":  {id: 249964, sourceType: "RAID", sourceName: "The Dreamrift", source: "thedreamrift", isTier: true},
@@ -1292,8 +1510,7 @@ var knownItems = map[string]knownItemDef{
 	"Luminant Verdict's Greaves":          {id: 249960, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Aetherlume Stompers":                 {id: 251220, sourceType: "RAID", sourceName: "March on Quel'Danas", source: "marchonqueldanas", bossName: "Midnight Falls"},
 
-	// ── Priest — Blind Oath's Burden ─────────────────────────────────────────
-
+	// Priest — Blind Oath's Burden
 	"Blind Oath's Winged Crest": {id: 250051, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Blind Oath's Seraphguards": {id: 250049, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Blind Oath's Raiment":      {id: 250054, sourceType: "RAID", sourceName: "The Dreamrift", source: "thedreamrift", isTier: true},
@@ -1301,8 +1518,7 @@ var knownItems = map[string]knownItemDef{
 	"Blind Oath's Touch":        {id: 250052, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Blind Oath's Wraps":        {id: 250047, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: false},
 
-	// ── Rogue — Motley of the Grim Jest ──────────────────────────────────────
-
+	// Rogue — Motley of the Grim Jest
 	"Masquerade of the Grim Jest":       {id: 250006, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Venom Casks of the Grim Jest":      {id: 250004, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Fantastic Finery of the Grim Jest": {id: 250009, sourceType: "RAID", sourceName: "The Dreamrift", source: "thedreamrift", isTier: true},
@@ -1310,8 +1526,7 @@ var knownItems = map[string]knownItemDef{
 	"Blade Holsters of the Grim Jest":   {id: 250005, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Balancing Boots of the Grim Jest":  {id: 250008, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: false},
 
-	// ── Shaman — Mantle of the Primal Core ───────────────────────────────────
-
+	// Shaman — Mantle of the Primal Core
 	"Locus of the Primal Core":      {id: 249979, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Tempests of the Primal Core":   {id: 249980, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Embrace of the Primal Core":    {id: 249976, sourceType: "RAID", sourceName: "The Dreamrift", source: "thedreamrift", isTier: true},
@@ -1320,8 +1535,7 @@ var knownItems = map[string]knownItemDef{
 	"Ceinture of the Primal Core":   {id: 249977, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: false},
 	"Leggings of the Primal Core":   {id: 249978, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 
-	// ── Warlock — Reign of the Abyssal Immolator ─────────────────────────────
-
+	// Warlock — Reign of the Abyssal Immolator
 	"Abyssal Immolator's Smoldering Flames": {id: 250042, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Abyssal Immolator's Fury":              {id: 250046, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Abyssal Immolator's Dreadrobe":         {id: 250045, sourceType: "RAID", sourceName: "The Dreamrift", source: "thedreamrift", isTier: true},
@@ -1362,14 +1576,22 @@ func findUnresolvedItems(updatedDate, target string) []unresolvedItem {
 
 	files, _ := filepath.Glob("data/*.json")
 	for _, f := range files {
-		if filepath.Base(f) == filepath.Base(sourceMapCachePath) {
+		base := filepath.Base(f)
+		if base == filepath.Base(sourceMapCachePath) {
+			continue
+		}
+		// Skip guide files — they have a different format and don't contain BiS items.
+		if strings.HasPrefix(base, "guide_") {
 			continue
 		}
 		spec, err := loadSpec(f)
 		if err != nil {
 			continue
 		}
-		if target != "" && spec.Class+"_"+spec.Spec != target {
+		// Target can be "CLASS_Spec" or "CLASS_Spec_Hero" — match either.
+		specKey := spec.Class + "_" + spec.Spec
+		fullKey := specKey + "_" + spec.HeroKey
+		if target != "" && target != specKey && target != fullKey {
 			continue
 		}
 		if updatedDate != "" && spec.Updated != updatedDate {
@@ -1420,17 +1642,30 @@ func listInstances() error {
 // Spec selection
 // ============================================================
 
-func selectSpec(reader *bufio.Reader) *struct{ Class, Spec string } {
+type specSelection struct {
+	Class   string
+	Spec    string
+	HeroKey string
+}
+
+func selectSpec(reader *bufio.Reader) *specSelection {
 	fmt.Println("\nSelect a spec to edit:")
 	fmt.Println()
 
-	for i, s := range allSpecs {
-		filename := fmt.Sprintf("data/%s_%s.json", s.Class, s.Spec)
+	// Build a flat list of editable targets (spec × hero, or spec × "any").
+	// This mirrors expandScrapeTargets so the editor can reach split specs.
+	targets := expandScrapeTargets()
+	for i, t := range targets {
+		filename := buildDataFilename(t.Class, t.Spec, t.HeroKey)
 		status := "empty"
 		if spec, err := loadSpec(filename); err == nil && len(spec.Items) > 0 {
 			status = fmt.Sprintf("%d/16 slots", len(spec.Items))
 		}
-		fmt.Printf("  %2d. %-14s %-14s [%s]\n", i+1, s.Class, s.Spec, status)
+		label := fmt.Sprintf("%s %s", t.Class, t.Spec)
+		if t.HeroKey != "any" {
+			label += " (" + t.HeroKey + ")"
+		}
+		fmt.Printf("  %2d. %-45s [%s]\n", i+1, label, status)
 	}
 
 	fmt.Println()
@@ -1442,35 +1677,44 @@ func selectSpec(reader *bufio.Reader) *struct{ Class, Spec string } {
 	}
 
 	n, err := strconv.Atoi(input)
-	if err != nil || n < 1 || n > len(allSpecs) {
+	if err != nil || n < 1 || n > len(targets) {
 		fmt.Println("Invalid selection.")
 		return nil
 	}
 
-	s := allSpecs[n-1]
-	return &struct{ Class, Spec string }{s.Class, s.Spec}
+	t := targets[n-1]
+	return &specSelection{Class: t.Class, Spec: t.Spec, HeroKey: t.HeroKey}
 }
 
 // ============================================================
 // Spec editing
 // ============================================================
 
-func editSpec(reader *bufio.Reader, blizzard *BlizzardClient, class, spec string) {
-	filename := fmt.Sprintf("data/%s_%s.json", class, spec)
+func editSpec(reader *bufio.Reader, blizzard *BlizzardClient, class, spec, heroKey string) {
+	filename := buildDataFilename(class, spec, heroKey)
 
 	specData, err := loadSpec(filename)
 	if err != nil {
 		specData = &SpecData{
 			Class:   class,
 			Spec:    spec,
+			HeroKey: heroKey,
 			Season:  "Midnight S1",
 			Updated: time.Now().Format("2006-01-02"),
 			Items:   []ItemData{},
 		}
 	}
+	// Guard against old data files that pre-date the heroKey field.
+	if specData.HeroKey == "" {
+		specData.HeroKey = heroKey
+	}
 
 	for {
-		fmt.Printf("\n═══ %s %s ═══\n\n", specData.Class, specData.Spec)
+		heroLabel := ""
+		if specData.HeroKey != "any" {
+			heroLabel = " (" + specData.HeroKey + ")"
+		}
+		fmt.Printf("\n═══ %s %s%s ═══\n\n", specData.Class, specData.Spec, heroLabel)
 
 		for i, slot := range slots {
 			item := findItem(specData, slot.ID)
@@ -1735,9 +1979,17 @@ func generate() error {
 
 	sort.Strings(jsonFiles)
 
-	var specs []SpecData
+	// Load all BiS specs and group by {class, spec} so we can emit one Lua
+	// block per spec with nested hero keys.
+	type specKey struct{ Class, Spec string }
+	grouped := map[specKey]map[string]*SpecData{}
+
 	for _, file := range jsonFiles {
-		if filepath.Base(file) == filepath.Base(sourceMapCachePath) {
+		base := filepath.Base(file)
+		if base == filepath.Base(sourceMapCachePath) {
+			continue
+		}
+		if strings.HasPrefix(base, "guide_") {
 			continue
 		}
 		spec, err := loadSpec(file)
@@ -1745,18 +1997,63 @@ func generate() error {
 			return fmt.Errorf("error parsing %s: %w", file, err)
 		}
 		if len(spec.Items) == 0 {
-			fmt.Printf("  Skipping (empty): %s %s\n", spec.Class, spec.Spec)
+			fmt.Printf("  Skipping (empty): %s %s [%s]\n", spec.Class, spec.Spec, spec.HeroKey)
 			continue
+		}
+		heroKey := spec.HeroKey
+		if heroKey == "" {
+			heroKey = "any" // backward compat with data files predating heroKey
 		}
 		sort.Slice(spec.Items, func(i, j int) bool {
 			return spec.Items[i].SlotID < spec.Items[j].SlotID
 		})
-		specs = append(specs, *spec)
-		fmt.Printf("  Loaded: %s %s (%d items)\n", spec.Class, spec.Spec, len(spec.Items))
+		k := specKey{spec.Class, spec.Spec}
+		if grouped[k] == nil {
+			grouped[k] = map[string]*SpecData{}
+		}
+		grouped[k][heroKey] = spec
+		fmt.Printf("  Loaded: %s %s [%s] (%d items)\n", spec.Class, spec.Spec, heroKey, len(spec.Items))
 	}
 
-	if len(specs) == 0 {
+	if len(grouped) == 0 {
 		return fmt.Errorf("no specs with items found")
+	}
+
+	// Flatten into a stable-ordered slice of SpecGroups for the template.
+	var keys []specKey
+	for k := range grouped {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		if keys[i].Class != keys[j].Class {
+			return keys[i].Class < keys[j].Class
+		}
+		return keys[i].Spec < keys[j].Spec
+	})
+
+	var groups []SpecGroup
+	for _, k := range keys {
+		heroMap := grouped[k]
+		var heroKeys []string
+		for h := range heroMap {
+			heroKeys = append(heroKeys, h)
+		}
+		sort.Strings(heroKeys)
+
+		g := SpecGroup{
+			Class:  k.Class,
+			Spec:   k.Spec,
+			Season: "Midnight S1",
+		}
+		for _, h := range heroKeys {
+			s := heroMap[h]
+			g.Heroes = append(g.Heroes, HeroGroup{
+				HeroKey: h,
+				Updated: s.Updated,
+				Items:   s.Items,
+			})
+		}
+		groups = append(groups, g)
 	}
 
 	tmpl, err := template.ParseFiles("templates/GearPath_Data.lua.tmpl")
@@ -1773,12 +2070,16 @@ func generate() error {
 
 	if err := tmpl.Execute(outFile, TemplateData{
 		Generated: time.Now().Format("2006-01-02 15:04:05"),
-		Specs:     specs,
+		Groups:    groups,
 	}); err != nil {
 		return fmt.Errorf("template error: %w", err)
 	}
 
-	fmt.Printf("\nGenerated: %s (%d specs)\n", outputPath, len(specs))
+	totalLists := 0
+	for _, g := range groups {
+		totalLists += len(g.Heroes)
+	}
+	fmt.Printf("\nGenerated: %s (%d specs, %d hero lists)\n", outputPath, len(groups), totalLists)
 	return nil
 }
 
@@ -1790,15 +2091,16 @@ func initSpecs() error {
 	today := time.Now().Format("2006-01-02")
 	created, skipped := 0, 0
 
-	for _, s := range allSpecs {
-		filename := fmt.Sprintf("data/%s_%s.json", s.Class, s.Spec)
+	for _, t := range expandScrapeTargets() {
+		filename := buildDataFilename(t.Class, t.Spec, t.HeroKey)
 		if _, err := os.Stat(filename); err == nil {
 			skipped++
 			continue
 		}
 		skeleton := SpecData{
-			Class:   s.Class,
-			Spec:    s.Spec,
+			Class:   t.Class,
+			Spec:    t.Spec,
+			HeroKey: t.HeroKey,
 			Season:  "Midnight S1",
 			Updated: today,
 			Items:   []ItemData{},
@@ -1814,11 +2116,13 @@ func initSpecs() error {
 	fmt.Printf("\nDone. Created: %d, Skipped: %d\n", created, skipped)
 	return nil
 }
+
 // ============================================================
 // Guide scraper — stat priority + gems/enchants/consumables
+// (unchanged in this PR; hero-talent support for guides is deferred
+// to a follow-up branch per the feat/hero-talents-guides plan)
 // ============================================================
 
-// GuideData holds all scraped guide info for one spec.
 type GuideData struct {
 	Class       string
 	Spec        string
@@ -1830,7 +2134,7 @@ type GuideData struct {
 }
 
 type StatPriority struct {
-	Format     string // "ordered" or "percentage"
+	Format     string
 	Ordered    []string
 	Percentage []StatPct
 	Note       string
@@ -1864,10 +2168,9 @@ type GuideTemplateData struct {
 	Specs     []GuideData
 }
 
-// URL slug suffixes for guide pages — same base slug as BiS
 const (
-	statSuffix  = "-stat-priority"
-	gearSuffix  = "-gems-enchants-consumables"
+	statSuffix = "-stat-priority"
+	gearSuffix = "-gems-enchants-consumables"
 )
 
 func scrapeGuideAll(target string) error {
@@ -1889,7 +2192,8 @@ func scrapeGuideAll(target string) error {
 	if err := chromedp.Run(browserCtx, chromedp.Navigate("about:blank")); err != nil {
 		return fmt.Errorf("failed to start browser: %w", err)
 	}
-	fmt.Println("Browser ready.\n")
+	fmt.Println("Browser ready.")
+	fmt.Println()
 
 	today := time.Now().Format("2006-01-02")
 	success, failed, skipped := 0, 0, 0
@@ -1926,7 +2230,7 @@ func scrapeGuideAll(target string) error {
 
 		fmt.Printf("OK\n")
 		success++
-		time.Sleep(1200 * time.Millisecond) // be polite
+		time.Sleep(1200 * time.Millisecond)
 	}
 
 	fmt.Printf("\nDone. OK: %d, Failed: %d, Skipped: %d\n", success, failed, skipped)
@@ -1944,7 +2248,6 @@ func scrapeGuideSpec(browserCtx context.Context, slug, class, spec, today string
 		Updated: today,
 	}
 
-	// ── Stat priority page ───────────────────────────────────────────────────
 	statURL := fmt.Sprintf("https://www.icy-veins.com/wow/%s%s", slug, statSuffix)
 	var statText string
 	pageCtx, pageCancel := context.WithTimeout(browserCtx, 30*time.Second)
@@ -1960,7 +2263,6 @@ func scrapeGuideSpec(browserCtx context.Context, slug, class, spec, today string
 	}
 	guide.Stats = parseStatPriority(statText)
 
-	// ── Gems/enchants/consumables page ───────────────────────────────────────
 	consumURL := fmt.Sprintf("https://www.icy-veins.com/wow/%s%s", slug, gearSuffix)
 	var consumText string
 	pageCtx2, pageCancel2 := context.WithTimeout(browserCtx, 30*time.Second)
@@ -1982,8 +2284,6 @@ func scrapeGuideSpec(browserCtx context.Context, slug, class, spec, today string
 	return guide, nil
 }
 
-// ── Stat priority parser ─────────────────────────────────────────────────────
-
 func parseStatPriority(text string) StatPriority {
 	sp := StatPriority{}
 
@@ -1993,7 +2293,6 @@ func parseStatPriority(text string) StatPriority {
 		"Item Level", "Armor",
 	}
 
-	// Try percentage format first: "X% into StatName"
 	pctRegex := regexp.MustCompile(`(\d+)%\s+into\s+([A-Za-z ]+)`)
 	pctMatches := pctRegex.FindAllStringSubmatch(text, -1)
 	if len(pctMatches) >= 2 {
@@ -2009,7 +2308,6 @@ func parseStatPriority(text string) StatPriority {
 		return sp
 	}
 
-	// Try inline ordered format: "Stat1 > Stat2 > Stat3" on a single line
 	lines := strings.Split(text, "\n")
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -2029,8 +2327,6 @@ func parseStatPriority(text string) StatPriority {
 		}
 	}
 
-	// Try one-stat-per-line format: consecutive lines that are each a known stat
-	// e.g. Windwalker Monk: Agility / Haste / Critical Strike / Mastery / Versatility
 	var consecutiveStats []string
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -2041,7 +2337,6 @@ func parseStatPriority(text string) StatPriority {
 				break
 			}
 		}
-		// Also accept "Stat = Stat" or "Stat, Stat" combos on one line
 		if !isKnown && strings.ContainsAny(line, "=,") && len(line) < 50 {
 			parts := regexp.MustCompile(`[=,]`).Split(line, -1)
 			allStats := true
@@ -2066,7 +2361,6 @@ func parseStatPriority(text string) StatPriority {
 		if isKnown {
 			consecutiveStats = append(consecutiveStats, line)
 		} else if len(consecutiveStats) >= 2 {
-			// End of consecutive block — we have enough
 			break
 		} else {
 			consecutiveStats = nil
@@ -2078,7 +2372,6 @@ func parseStatPriority(text string) StatPriority {
 		return sp
 	}
 
-	// Try "stat priority[...]:" followed by ordered list using regex
 	orderedRegex := regexp.MustCompile(`(?i)stat priority[^:]*:\s*\n?((?:[A-Za-z ]+(?:=|>|\n)){2,})`)
 	if m := orderedRegex.FindStringSubmatch(text); m != nil {
 		sp.Format = "ordered"
@@ -2095,14 +2388,12 @@ func parseStatPriority(text string) StatPriority {
 		}
 	}
 
-	// Last resort: note
 	sp.Format = "ordered"
 	sp.Note = extractStatNote(text)
 	return sp
 }
 
 func extractStatNote(text string) string {
-	// Find the first sentence mentioning multiple stats
 	sentences := strings.Split(text, ".")
 	for _, s := range sentences {
 		s = strings.TrimSpace(s)
@@ -2120,38 +2411,22 @@ func extractStatNote(text string) string {
 	return ""
 }
 
-// ── Gems parser ──────────────────────────────────────────────────────────────
-// The page text contains icon characters (stripped by innerText) leaving
-// double-spaces before item names. We search for gem stone keywords directly.
-
-// knownGems is the authoritative list of Midnight Season 1 gem names.
-// Parsing simply scans the guide text for any known gem name as a substring,
-// exactly like knownConsumables — no regex, no heuristics.
 var knownGems = []string{
-	// Prismatic (main stat) — Diamond slot
 	"Indecipherable Eversong Diamond",
 	"Powerful Eversong Diamond",
 	"Thalassian Diamond",
-
-	// Red — Amethyst slot (Strength/Agility/Intellect hybrids)
 	"Flawless Deadly Amethyst",
 	"Flawless Quick Amethyst",
 	"Flawless Masterful Amethyst",
 	"Flawless Versatile Amethyst",
-
-	// Blue — Lapis slot
 	"Flawless Deadly Lapis",
 	"Flawless Quick Lapis",
 	"Flawless Masterful Lapis",
 	"Flawless Versatile Lapis",
-
-	// Yellow — Peridot slot
 	"Flawless Deadly Peridot",
 	"Flawless Quick Peridot",
 	"Flawless Masterful Peridot",
 	"Flawless Versatile Peridot",
-
-	// Jewelcrafting-only
 	"The Dazzling Diamond Epic",
 }
 
@@ -2164,7 +2439,6 @@ func parseGems(text string) []GemEntry {
 		return nil
 	}
 
-	// Normalise double spaces (stripped icon characters before item names)
 	section = regexp.MustCompile(`\s{2,}`).ReplaceAllString(section, " ")
 
 	var gems []GemEntry
@@ -2179,8 +2453,6 @@ func parseGems(text string) []GemEntry {
 	}
 	return gems
 }
-
-// ── Enchants parser ──────────────────────────────────────────────────────────
 
 func parseEnchants(text string) []EnchantEntry {
 	var enchants []EnchantEntry
@@ -2200,7 +2472,7 @@ func parseEnchants(text string) []EnchantEntry {
 	}
 
 	enchantPattern := regexp.MustCompile(`Enchant [A-Za-z]+ - [A-Za-z` + "`" + `' ]+`)
-	trailingNoise  := regexp.MustCompile(`\s+(until|or |when |as |if |\(|,|and )`)
+	trailingNoise := regexp.MustCompile(`\s+(until|or |when |as |if |\(|,|and )`)
 
 	extractEnchant := func(s string) string {
 		s = regexp.MustCompile(`\s{2,}`).ReplaceAllString(s, " ")
@@ -2255,7 +2527,6 @@ func parseEnchants(text string) []EnchantEntry {
 			continue
 		}
 
-		// Format 1: tab-separated "Slot\tEnchant Name"
 		if strings.Contains(line, "\t") {
 			parts := strings.SplitN(line, "\t", 2)
 			if len(parts) == 2 {
@@ -2277,7 +2548,6 @@ func parseEnchants(text string) []EnchantEntry {
 			continue
 		}
 
-		// Format 2: slot name alone on a line, enchant on next line(s)
 		for _, slot := range slotNames {
 			if !strings.EqualFold(line, slot) {
 				continue
@@ -2308,11 +2578,6 @@ func parseEnchants(text string) []EnchantEntry {
 	return enchants
 }
 
-// ── Consumables parser ───────────────────────────────────────────────────────
-
-// knownConsumables is the source of truth for all relevant Midnight S1 consumable
-// item names, grouped by category. Parsing simply scans the guide text for the
-// first occurrence of any known item in each category.
 var knownConsumables = map[string][]string{
 	"flask": {
 		"Flask of the Magisters",
@@ -2359,7 +2624,6 @@ var knownConsumables = map[string][]string{
 func parseConsumables(text string) ConsumableSet {
 	cs := ConsumableSet{}
 
-	// Isolate the consumables block to avoid false positives from other sections
 	consumBlock := extractSectionByHeading(text,
 		[]string{"Consumable Recommendations", "Extra Consumable"},
 		[]string{"Changelog"},
@@ -2368,18 +2632,14 @@ func parseConsumables(text string) ConsumableSet {
 		consumBlock = text
 	}
 
-	// Normalise double spaces (stripped icon characters before item names)
 	consumBlock = regexp.MustCompile(`\s{2,}`).ReplaceAllString(consumBlock, " ")
 
-	cs.Flask     = findFirstKnown(consumBlock, knownConsumables["flask"])
-	cs.Potion    = findFirstKnown(consumBlock, knownConsumables["potion"])
-	cs.Food      = findFirstKnown(consumBlock, knownConsumables["food"])
+	cs.Flask = findFirstKnown(consumBlock, knownConsumables["flask"])
+	cs.Potion = findFirstKnown(consumBlock, knownConsumables["potion"])
+	cs.Food = findFirstKnown(consumBlock, knownConsumables["food"])
 	cs.WeaponOil = findFirstKnown(consumBlock, knownConsumables["weaponOil"])
-	cs.AugRune   = findFirstKnown(consumBlock, knownConsumables["augRune"])
+	cs.AugRune = findFirstKnown(consumBlock, knownConsumables["augRune"])
 
-	// WeaponOil fallback: some specs embed the oil in the weapon enchant line
-	// e.g. "Enchant Weapon - Jan'alai's Precision and Thalassian Phoenix Oil"
-	// which falls outside the consumable block — scan full text
 	if cs.WeaponOil == "" {
 		fullNorm := regexp.MustCompile(`\s{2,}`).ReplaceAllString(text, " ")
 		cs.WeaponOil = findFirstKnown(fullNorm, knownConsumables["weaponOil"])
@@ -2388,8 +2648,6 @@ func parseConsumables(text string) ConsumableSet {
 	return cs
 }
 
-// findFirstKnown scans text for the first occurrence of any item in the candidates
-// list and returns the canonical name (from the list, not from the text).
 func findFirstKnown(text string, candidates []string) string {
 	lowerText := strings.ToLower(text)
 	bestIdx := -1
@@ -2403,7 +2661,7 @@ func findFirstKnown(text string, candidates []string) string {
 	}
 	return bestName
 }
-// incidental occurrences of keywords mid-sentence.
+
 func extractSectionByHeading(text string, startMarkers, endMarkers []string) string {
 	lines := strings.Split(text, "\n")
 
@@ -2452,9 +2710,6 @@ func extractSectionByHeading(text string, startMarkers, endMarkers []string) str
 	}
 	return section
 }
-
-
-// ── generate-guide command ───────────────────────────────────────────────────
 
 func generateGuide() error {
 	files, err := filepath.Glob("data/guide_*.json")

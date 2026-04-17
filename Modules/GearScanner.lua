@@ -52,7 +52,7 @@ local EQUIPPABLE_INV_TYPES = {
 GearScanner.equipped = {}
 GearScanner.bagged   = {}
 
-function GearScanner:Scan(class, spec)
+function GearScanner:Scan(class, spec, heroTalent)
     self.equipped = {}
     self.bagged   = {}
     self:ScanEquipped()
