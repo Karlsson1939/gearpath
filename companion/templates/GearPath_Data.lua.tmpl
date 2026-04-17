@@ -5,11 +5,13 @@
 -- Last generated: {{.Generated}}
 
 GearPath.BiSData = {}
-{{range .Specs}}
-GearPath.BiSData["{{.Class}}"] = GearPath.BiSData["{{.Class}}"] or {}
-GearPath.BiSData["{{.Class}}"]["{{.Spec}}"] = {
-    -- Season: {{.Season}} | Updated: {{.Updated}}
-{{range .Items}}
+{{range $group := .Groups}}
+GearPath.BiSData["{{$group.Class}}"] = GearPath.BiSData["{{$group.Class}}"] or {}
+GearPath.BiSData["{{$group.Class}}"]["{{$group.Spec}}"] = {}
+{{range $hero := $group.Heroes}}
+-- {{$group.Class}} {{$group.Spec}} [{{$hero.HeroKey}}] | Season: {{$group.Season}} | Updated: {{$hero.Updated}}
+GearPath.BiSData["{{$group.Class}}"]["{{$group.Spec}}"]["{{$hero.HeroKey}}"] = {
+{{range $hero.Items}}
     [{{.SlotID}}] = {
         itemID     = {{.ItemID}},
         itemName   = "{{.ItemName}}",
@@ -20,8 +22,10 @@ GearPath.BiSData["{{.Class}}"]["{{.Spec}}"] = {
         bossName   = {{if .BossName}}"{{.BossName}}"{{else}}nil{{end}},
         ilvl       = {{.Ilvl}},
         priority   = {{.Priority}},
-        isTier     = {{.IsTier}},
+        isTier     = {{.IsTier}},{{if .HeroSpec}}
+        heroSpec   = "{{.HeroSpec}}",{{end}}
     },
 {{end}}
 }
+{{end}}
 {{end}}

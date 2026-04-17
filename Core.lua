@@ -31,6 +31,7 @@ local defaults = {
     },
     char = {
         lastSpec = nil,
+        lastHeroTalent = nil,
         manualOverrides = {},
     },
 }
@@ -47,6 +48,9 @@ end
 function GearPath:OnEnable()
     self:RegisterEvent("PLAYER_ENTERING_WORLD", "OnPlayerEnteringWorld")
     self:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED", "OnSpecChanged")
+    self:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED", "OnSpecChanged")
+    self:RegisterEvent("TRAIT_CONFIG_UPDATED", "OnTraitConfigUpdated")
+    self:RegisterEvent("PLAYER_LEVEL_UP", "OnPlayerLevelUp")
     self:RegisterEvent("PLAYER_EQUIPMENT_CHANGED", "OnEquipmentChanged")
     self:RegisterEvent("BAG_UPDATE", "OnBagUpdate")
     self:RegisterEvent("WEEKLY_REWARDS_UPDATE", "OnVaultUpdate")
@@ -71,6 +75,19 @@ function GearPath:OnPlayerEnteringWorld()
 end
 
 function GearPath:OnSpecChanged()
+    -- Spec swap also changes the available hero talent trees, so re-detect fully.
+    self:DetectAndLoad()
+end
+
+function GearPath:OnTraitConfigUpdated()
+    -- Fires whenever the player changes talents (including hero talent selection).
+    -- Re-detect so currentHeroTalent stays in sync without requiring a /reload.
+    self:DetectAndLoad()
+end
+
+function GearPath:OnPlayerLevelUp()
+    -- When the player dings max level, the "not ready" gate should resolve
+    -- on its own. Re-detect so downstream modules refresh.
     self:DetectAndLoad()
 end
 
@@ -117,25 +134,75 @@ end
 
 function GearPath:DetectAndLoad()
     if GearPath.Detection then
-        GearPath.Detection:Detect(function(class, spec)
-            GearPath:OnDetectionComplete(class, spec)
+        GearPath.Detection:Detect(function(class, spec, heroTalent)
+            GearPath:OnDetectionComplete(class, spec, heroTalent)
         end)
     end
 end
 
-function GearPath:OnDetectionComplete(class, spec)
-    self.currentClass = class
-    self.currentSpec = spec
-    self.db.char.lastSpec = spec
+-- ============================================================
+-- BiS Data Accessor
+-- ============================================================
+
+-- GetBiSForCurrentSpec returns the slot→item table that's correct for the
+-- player's current class, spec, and hero talent — or nil if any of those
+-- aren't set, or if we don't have data for this combination.
+--
+-- Schema: BiSData[class][spec][heroKey] → { [slotID] = bisItem, ... }
+--
+-- Resolution order:
+--   1. Exact match on currentHeroTalent (e.g. "San'layn")
+--   2. Fallback to "any" (the common case — 38/40 specs)
+--   3. nil if neither exists
+--
+-- All readers that previously did BiSData[class][spec] should call this
+-- instead, so the "which hero talent's list?" logic lives in one place.
+function GearPath:GetBiSForCurrentSpec()
+    if not self.BiSData then return nil end
+
+    local class = self.currentClass
+    local spec  = self.currentSpec
+    if not class or not spec then return nil end
+
+    local specData = self.BiSData[class] and self.BiSData[class][spec]
+    if not specData then return nil end
+
+    -- Per-hero-talent list takes precedence
+    local hero = self.currentHeroTalent
+    if hero and specData[hero] then
+        return specData[hero]
+    end
+
+    -- Common case: single "any" list covers all hero talents
+    return specData["any"]
+end
+
+function GearPath:OnDetectionComplete(class, spec, heroTalent)
+    self.currentClass       = class
+    self.currentSpec        = spec
+    self.currentHeroTalent  = heroTalent
+    self.db.char.lastSpec        = spec
+    self.db.char.lastHeroTalent  = heroTalent
 
     self:RebuildPriority()
 end
 
 function GearPath:RebuildPriority()
-    if not self.currentClass or not self.currentSpec then return end
+    -- Endgame-only gate: BiS data is only meaningful when we know the full
+    -- identity (class + spec + hero talent) and the player is at max level.
+    if not GearPath.Detection then return end
+
+    local ready = GearPath.Detection:IsReady()
+    if not ready then
+        -- Keep saved scanner/priority state cleared so stale data doesn't show.
+        if GearPath.MainFrame and GearPath.MainFrame:IsShown() then
+            GearPath.MainFrame:Refresh()
+        end
+        return
+    end
 
     if GearPath.GearScanner then
-        GearPath.GearScanner:Scan(self.currentClass, self.currentSpec)
+        GearPath.GearScanner:Scan(self.currentClass, self.currentSpec, self.currentHeroTalent)
     end
 
     if GearPath.PriorityEngine then
@@ -179,7 +246,18 @@ function GearPath:SlashCommand(input)
             GearPath.MainFrame:ResetPosition()
         end
         self:Print("Panel position reset.")
+    elseif input == "status" then
+        -- Quick debug: what does GearPath think you are right now?
+        if GearPath.Detection then
+            self:Print("Identity: " .. GearPath.Detection:GetSummary())
+            local ready, reason = GearPath.Detection:IsReady()
+            if ready then
+                self:Print("Status: ready")
+            else
+                self:Print("Status: not ready (" .. (reason or "unknown") .. ")")
+            end
+        end
     else
-        self:Print("Commands: /gp | /gp priority | /gp bis | /gp vault | /gp config | /gp reset")
+        self:Print("Commands: /gp | /gp priority | /gp bis | /gp vault | /gp config | /gp status | /gp reset")
     end
 end

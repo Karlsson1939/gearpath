@@ -77,10 +77,7 @@ end
 function VaultAdvisor:GetRankedRecommendations()
     local result = {}
 
-    local bisSet = GearPath.BiSData
-        and GearPath.BiSData[GearPath.currentClass]
-        and GearPath.BiSData[GearPath.currentClass][GearPath.currentSpec]
-
+    local bisSet  = GearPath:GetBiSForCurrentSpec()
     local scanner = GearPath.GearScanner
     local engine  = GearPath.PriorityEngine
 

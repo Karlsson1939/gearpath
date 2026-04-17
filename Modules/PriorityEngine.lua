@@ -11,15 +11,7 @@ function PriorityEngine:Rebuild()
     self.rankedSources = {}
     self.missingItems  = {}
 
-    local class = GearPath.currentClass
-    local spec  = GearPath.currentSpec
-
-    if not class or not spec then return end
-
-    local bisSet = GearPath.BiSData
-        and GearPath.BiSData[class]
-        and GearPath.BiSData[class][spec]
-
+    local bisSet = GearPath:GetBiSForCurrentSpec()
     if not bisSet then return end
 
     local slotWeights = GearPath.db.profile.slotWeights

@@ -1,5 +1,5 @@
 -- GearPath
--- Modules/Detection.lua - Class and specialization auto-detection
+-- Modules/Detection.lua - Class, specialization, and hero talent auto-detection
 
 GearPath.Detection = {}
 local Detection = GearPath.Detection
@@ -19,6 +19,13 @@ local classDisplayNames = {
     DEMONHUNTER = "Demon Hunter",
     EVOKER      = "Evoker",
 }
+
+-- Normalize a name to a BiSData key by stripping whitespace.
+-- API returns "Beast Mastery" / "Pack Leader", our keys are "BeastMastery" / "PackLeader".
+local function normalizeKey(name)
+    if not name then return nil end
+    return (name:gsub("%s+", ""))
+end
 
 function Detection:Detect(callback)
     local _, classFile = UnitClass("player")
@@ -46,21 +53,89 @@ function Detection:Detect(callback)
         return
     end
 
-    -- Normalize spec name to match BiSData keys (API returns e.g. "Beast Mastery",
-    -- our keys use "BeastMastery" — strip all spaces)
-    local normalizedSpec = specName:gsub("%s+", "")
+    local normalizedSpec = normalizeKey(specName)
 
-    GearPath:Print(string.format("[Detection] Detected: %s %s (key: %s)",
-        specName, classDisplayNames[classFile] or classFile, normalizedSpec))
+    -- Hero talent detection
+    local heroTalentDisplay = nil
+    local normalizedHeroTalent = nil
+    local subTreeID = C_ClassTalents.GetActiveHeroTalentSpec()
+
+    if subTreeID then
+        local configID = C_ClassTalents.GetActiveConfigID()
+        if not configID then
+            -- Talent config not yet loaded at login; retry like we do for spec.
+            C_Timer.After(1, function()
+                Detection:Detect(callback)
+            end)
+            return
+        end
+
+        local subTreeInfo = C_Traits.GetSubTreeInfo(configID, subTreeID)
+        if subTreeInfo and subTreeInfo.name then
+            heroTalentDisplay = subTreeInfo.name
+            normalizedHeroTalent = normalizeKey(heroTalentDisplay)
+        end
+    end
+
+    -- Store on the main addon table. We keep both forms:
+    --   currentSpec / currentHeroTalent  = normalized keys for BiSData lookup
+    --   currentSpecDisplay / ...Display  = human-readable for UI and chat
+    GearPath.currentClass             = classFile
+    GearPath.currentSpec              = normalizedSpec
+    GearPath.currentSpecDisplay       = specName
+    GearPath.currentHeroTalent        = normalizedHeroTalent
+    GearPath.currentHeroTalentDisplay = heroTalentDisplay
+
+    if heroTalentDisplay then
+        GearPath:Print(string.format("[Detection] Detected: %s %s (%s) [keys: %s / %s]",
+            specName, classDisplayNames[classFile] or classFile,
+            heroTalentDisplay, normalizedSpec, normalizedHeroTalent))
+    else
+        GearPath:Print(string.format("[Detection] Detected: %s %s (no hero talent selected) [key: %s]",
+            specName, classDisplayNames[classFile] or classFile, normalizedSpec))
+    end
 
     if callback then
-        callback(classFile, normalizedSpec)
+        callback(classFile, normalizedSpec, normalizedHeroTalent)
     end
 end
 
 function Detection:GetSummary()
-    if not GearPath.currentClass or not GearPath.currentSpec then
+    if not GearPath.currentClass or not GearPath.currentSpecDisplay then
         return "Unknown"
     end
-    return GearPath.currentSpec .. " " .. (classDisplayNames[GearPath.currentClass] or GearPath.currentClass)
+    local base = GearPath.currentSpecDisplay .. " " .. (classDisplayNames[GearPath.currentClass] or GearPath.currentClass)
+    if GearPath.currentHeroTalentDisplay then
+        return base .. " (" .. GearPath.currentHeroTalentDisplay .. ")"
+    end
+    return base
+end
+
+function Detection:IsReady()
+    -- "Ready" = max level + full identity (class + spec + hero talent).
+    -- GearPath is endgame-oriented; without all three, we don't show BiS data.
+    local maxLevel = GetMaxLevelForPlayerExpansion and GetMaxLevelForPlayerExpansion() or 80
+    if UnitLevel("player") < maxLevel then
+        return false, "not_max_level"
+    end
+    if not GearPath.currentClass or not GearPath.currentSpec then
+        return false, "no_spec"
+    end
+    if not GearPath.currentHeroTalent then
+        return false, "no_hero_talent"
+    end
+    return true, nil
+end
+
+function Detection:GetNotReadyMessage()
+    local ready, reason = Detection:IsReady()
+    if ready then return nil end
+
+    if reason == "not_max_level" then
+        return "GearPath is an endgame addon. Reach max level to see your BiS priorities."
+    elseif reason == "no_hero_talent" then
+        return "Select a hero talent tree in your talent window to see your BiS priorities."
+    else
+        return "GearPath is still detecting your character."
+    end
 end

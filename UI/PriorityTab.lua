@@ -92,11 +92,9 @@ function PriorityTab:DrawProgressBar()
         container.progressCount = count
     end
 
-    local total   = 0
+    local total    = 0
     local equipped = 0
-    local bisSet  = GearPath.BiSData
-        and GearPath.BiSData[GearPath.currentClass]
-        and GearPath.BiSData[GearPath.currentClass][GearPath.currentSpec]
+    local bisSet   = GearPath:GetBiSForCurrentSpec()
 
     if bisSet then
         for _ in pairs(bisSet) do total = total + 1 end
