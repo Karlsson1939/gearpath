@@ -115,7 +115,7 @@
     },
     {
       "slotID": 11,
-      "itemID": 239659,
+      "itemID": 251513,
       "itemName": "Loa Worshiper's Band",
       "source": "Crafted",
       "sourceType": "CRAFTED",
@@ -163,7 +163,7 @@
     },
     {
       "slotID": 15,
-      "itemID": 250020,
+      "itemID": 250010,
       "itemName": "Windwrap of Ra-den's Chosen",
       "source": "thevoidspire",
       "sourceType": "RAID",

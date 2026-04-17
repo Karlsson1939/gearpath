@@ -67,7 +67,7 @@
     },
     {
       "slotID": 7,
-      "itemID": 250043,
+      "itemID": 250041,
       "itemName": "Abyssal Immolator's Pillars",
       "source": "thevoidspire",
       "sourceType": "RAID",
@@ -91,7 +91,7 @@
     },
     {
       "slotID": 9,
-      "itemID": 239663,
+      "itemID": 239648,
       "itemName": "Martyr's Bindings",
       "source": "Crafted",
       "sourceType": "CRAFTED",
@@ -103,7 +103,7 @@
     },
     {
       "slotID": 10,
-      "itemID": 250040,
+      "itemID": 250043,
       "itemName": "Abyssal Immolator's Grasps",
       "source": "thevoidspire",
       "sourceType": "RAID",

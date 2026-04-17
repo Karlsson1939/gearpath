@@ -55,7 +55,7 @@
     },
     {
       "slotID": 6,
-      "itemID": 249954,
+      "itemID": 249949,
       "itemName": "Night Ender's Girdle",
       "source": "thevoidspire",
       "sourceType": "RAID",
@@ -79,7 +79,7 @@
     },
     {
       "slotID": 8,
-      "itemID": 249956,
+      "itemID": 249954,
       "itemName": "Night Ender's Greatboots",
       "source": "thevoidspire",
       "sourceType": "RAID",
@@ -187,7 +187,7 @@
     },
     {
       "slotID": 17,
-      "itemID": 237838,
+      "itemID": 237847,
       "itemName": "Blood Knight's Impetus",
       "source": "Crafted",
       "sourceType": "CRAFTED",

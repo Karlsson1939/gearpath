@@ -20,3 +20,5 @@ WTF/
 
 
 companion/data/sourcemap_midnight_s1.json
+companion/data/validation_results.json
+docs/

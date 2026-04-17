@@ -43,7 +43,7 @@
     },
     {
       "slotID": 5,
-      "itemID": 249993,
+      "itemID": 250000,
       "itemName": "Frenzyward of the Black Talon",
       "source": "thedreamrift",
       "sourceType": "RAID",
@@ -55,7 +55,7 @@
     },
     {
       "slotID": 6,
-      "itemID": 239650,
+      "itemID": 244611,
       "itemName": "World Tender's Barkclasp",
       "source": "Crafted",
       "sourceType": "CRAFTED",
@@ -79,7 +79,7 @@
     },
     {
       "slotID": 8,
-      "itemID": 239652,
+      "itemID": 244610,
       "itemName": "World Tender's Rootslippers",
       "source": "Crafted",
       "sourceType": "CRAFTED",

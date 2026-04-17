@@ -7,7 +7,7 @@
   "items": [
     {
       "slotID": 1,
-      "itemID": 249985,
+      "itemID": 250060,
       "itemName": "Voidbreaker's Veil",
       "source": "thevoidspire",
       "sourceType": "RAID",
@@ -31,7 +31,7 @@
     },
     {
       "slotID": 3,
-      "itemID": 249983,
+      "itemID": 250058,
       "itemName": "Voidbreaker's Leyline Nexi",
       "source": "thevoidspire",
       "sourceType": "RAID",
@@ -43,7 +43,7 @@
     },
     {
       "slotID": 5,
-      "itemID": 249986,
+      "itemID": 250063,
       "itemName": "Voidbreaker's Robe",
       "source": "thedreamrift",
       "sourceType": "RAID",

@@ -43,7 +43,7 @@
     },
     {
       "slotID": 5,
-      "itemID": 249993,
+      "itemID": 250000,
       "itemName": "Frenzyward of the Black Talon",
       "source": "thedreamrift",
       "sourceType": "RAID",
@@ -56,11 +56,11 @@
     {
       "slotID": 6,
       "itemID": 49810,
-      "itemName": "Scabrous Zombie Leather Belt",
+      "itemName": "Scabrous Zombie Belt",
       "source": "pitofsaron",
       "sourceType": "DUNGEON",
       "sourceName": "Pit of Saron",
-      "bossName": "Ick",
+      "bossName": "Ick and Krick",
       "ilvl": 252,
       "priority": 6,
       "isTier": false
@@ -91,7 +91,7 @@
     },
     {
       "slotID": 9,
-      "itemID": 237835,
+      "itemID": 244584,
       "itemName": "Farstrider's Plated Bracers",
       "source": "Crafted",
       "sourceType": "CRAFTED",

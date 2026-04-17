@@ -2032,6 +2032,9 @@ func findUnresolvedItems(updatedDate, target string) []unresolvedItem {
 		if base == filepath.Base(sourceMapCachePath) {
 			continue
 		}
+		if base == filepath.Base(validationResultsPath) {
+			continue
+		}
 		// Skip guide files — they have a different format and don't contain BiS items.
 		if strings.HasPrefix(base, "guide_") {
 			continue
@@ -2439,6 +2442,9 @@ func generate() error {
 	for _, file := range jsonFiles {
 		base := filepath.Base(file)
 		if base == filepath.Base(sourceMapCachePath) {
+			continue
+		}
+		if base == filepath.Base(validationResultsPath) {
 			continue
 		}
 		if strings.HasPrefix(base, "guide_") {

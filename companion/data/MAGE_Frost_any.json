@@ -7,7 +7,7 @@
   "items": [
     {
       "slotID": 1,
-      "itemID": 249985,
+      "itemID": 250060,
       "itemName": "Voidbreaker's Veil",
       "source": "thevoidspire",
       "sourceType": "RAID",
@@ -43,7 +43,7 @@
     },
     {
       "slotID": 5,
-      "itemID": 249986,
+      "itemID": 250063,
       "itemName": "Voidbreaker's Robe",
       "source": "thedreamrift",
       "sourceType": "RAID",
@@ -67,7 +67,7 @@
     },
     {
       "slotID": 7,
-      "itemID": 249984,
+      "itemID": 250059,
       "itemName": "Voidbreaker's Britches",
       "source": "thevoidspire",
       "sourceType": "RAID",
@@ -91,7 +91,7 @@
     },
     {
       "slotID": 9,
-      "itemID": 239663,
+      "itemID": 239648,
       "itemName": "Martyr's Bindings",
       "source": "Crafted",
       "sourceType": "CRAFTED",
