@@ -140,6 +140,43 @@ function GearPath:DetectAndLoad()
     end
 end
 
+-- ============================================================
+-- BiS Data Accessor
+-- ============================================================
+
+-- GetBiSForCurrentSpec returns the slot→item table that's correct for the
+-- player's current class, spec, and hero talent — or nil if any of those
+-- aren't set, or if we don't have data for this combination.
+--
+-- Schema: BiSData[class][spec][heroKey] → { [slotID] = bisItem, ... }
+--
+-- Resolution order:
+--   1. Exact match on currentHeroTalent (e.g. "San'layn")
+--   2. Fallback to "any" (the common case — 38/40 specs)
+--   3. nil if neither exists
+--
+-- All readers that previously did BiSData[class][spec] should call this
+-- instead, so the "which hero talent's list?" logic lives in one place.
+function GearPath:GetBiSForCurrentSpec()
+    if not self.BiSData then return nil end
+
+    local class = self.currentClass
+    local spec  = self.currentSpec
+    if not class or not spec then return nil end
+
+    local specData = self.BiSData[class] and self.BiSData[class][spec]
+    if not specData then return nil end
+
+    -- Per-hero-talent list takes precedence
+    local hero = self.currentHeroTalent
+    if hero and specData[hero] then
+        return specData[hero]
+    end
+
+    -- Common case: single "any" list covers all hero talents
+    return specData["any"]
+end
+
 function GearPath:OnDetectionComplete(class, spec, heroTalent)
     self.currentClass       = class
     self.currentSpec        = spec

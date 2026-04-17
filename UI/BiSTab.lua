@@ -45,10 +45,7 @@ function BiSTab:Refresh()
         child2:Hide()
     end
 
-    local bisSet = GearPath.BiSData
-        and GearPath.BiSData[GearPath.currentClass]
-        and GearPath.BiSData[GearPath.currentClass][GearPath.currentSpec]
-
+    local bisSet = GearPath:GetBiSForCurrentSpec()
     if not bisSet then return end
 
     local scanner = GearPath.GearScanner
