@@ -731,6 +731,23 @@ func main() {
 				os.Exit(1)
 			}
 			return
+		case "validate-items":
+			strict := len(os.Args) > 2 && os.Args[2] == "--strict"
+			if err := validateItems(strict); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				os.Exit(1)
+			}
+			return
+		case "resolve-items":
+			if len(os.Args) < 3 {
+				fmt.Fprintf(os.Stderr, "Usage: go run . resolve-items \"Name One\" \"Name Two\" ...\n")
+				os.Exit(1)
+			}
+			if err := resolveItemsScan(os.Args[2:]); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				os.Exit(1)
+			}
+			return
 		}
 	}
 
@@ -1181,6 +1198,15 @@ func pickTableForTarget(tables []scrapedTable, t scrapeTarget) (string, error) {
 		t.HeroKey, strings.Join(seen, ", "))
 }
 
+// nameAliases maps Icy Veins display names to Blizzard API canonical names
+// for items where the two sources disagree. Each value MUST exist as a key in
+// knownItems — the validate-items command checks knownItems against the API,
+// so aliases that point to non-existent keys would silently drop items.
+var nameAliases = map[string]string{
+	// Blizzard renamed this item via hotfix; Icy Veins still uses the old name.
+	"Scabrous Zombie Leather Belt": "Scabrous Zombie Belt",
+}
+
 // parseIcyVeinsTable parses the tab-separated rows from a BiS table.
 //
 // Normal rows: SlotLabel \t ItemName \t Source
@@ -1196,6 +1222,10 @@ func parseIcyVeinsTable(tableData string, blizzard *BlizzardClient) []ItemData {
 	seen := map[int]bool{}
 
 	addItem := func(slotID int, itemName string) {
+		// Resolve Icy Veins name variants to API canonical names.
+		if canonical, ok := nameAliases[itemName]; ok {
+			itemName = canonical
+		}
 		item := ItemData{
 			SlotID:   slotID,
 			ItemName: itemName,
@@ -1406,34 +1436,32 @@ var knownItems = map[string]knownItemDef{
 	// Blacksmithing
 	"Spellbreaker's Bracers":      {id: 237834, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
 	"Spellbreaker's Warglaive":    {id: 237840, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
-	"Blood Knight's Impetus":      {id: 237838, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
-	"Dawncrazed Beast Cleaver":    {id: 237836, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
-	"Farstrider's Mercy":          {id: 237839, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
-	"Farstrider's Chopper":        {id: 237837, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
-	"Farstrider's Plated Bracers": {id: 237835, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
-	"Bloomforged Claw":            {id: 237841, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
+	"Blood Knight's Impetus":      {id: 237847, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
+	"Farstrider's Mercy":          {id: 237837, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
+	"Farstrider's Chopper":        {id: 237850, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
+	"Farstrider's Plated Bracers": {id: 244584, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
 	"Aln'hara Lantern":            {id: 245769, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
 	"Spellbreaker's Ultimatum":    {id: 237841, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
 	"Aln'hara Cane":               {id: 245770, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
 
 	// Leatherworking
-	"World Tender's Barkclasp":        {id: 239650, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
-	"World Tender's Rootslippers":     {id: 239652, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
-	"Silvermoon Agent's Sneakers":     {id: 244578, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
+	"World Tender's Barkclasp":        {id: 244611, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
+	"World Tender's Rootslippers":     {id: 244610, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
+	"Silvermoon Agent's Sneakers":     {id: 244569, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
 	"Silvermoon Agent's Deflectors":   {id: 244576, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
-	"Silvermoon Agent's Utility Belt": {id: 244579, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
+	"Silvermoon Agent's Utility Belt": {id: 244573, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
 	"Silvermoon Agent's Handwraps":    {id: 244575, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
 
 	// Tailoring
 	"Arcanoweave Bracers":      {id: 239660, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
 	"Arcanoweave Cloak":        {id: 239661, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
-	"Arcanoweave Cord":         {id: 239662, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
+	"Arcanoweave Cord":         {id: 239664, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
 	"Adherent's Silken Shroud": {id: 239656, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
-	"Martyr's Bindings":        {id: 239663, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
+	"Martyr's Bindings":        {id: 239648, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
 
 	// Jewelcrafting
-	"Platinum Star Band":          {id: 239658, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
-	"Loa Worshiper's Band":        {id: 239659, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
+	"Platinum Star Band":          {id: 193708, sourceType: "DUNGEON", sourceName: "Algeth'ar Academy", source: "algetharacademy", bossName: "Vexamus"},
+	"Loa Worshiper's Band":        {id: 251513, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
 	"Masterwork Sin'dorei Amulet": {id: 240950, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
 	"Masterwork Sin'dorei Band":   {id: 240949, sourceType: "CRAFTED", sourceName: "Crafted", source: "Crafted"},
 
@@ -1447,11 +1475,10 @@ var knownItems = map[string]knownItemDef{
 
 	// Death Knight — Relentless Rider's Lament
 	"Relentless Rider's Crown":       {id: 249970, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
-	"Relentless Rider's Dreadthorns": {id: 249971, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
+	"Relentless Rider's Dreadthorns": {id: 249968, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Relentless Rider's Cuirass":     {id: 249973, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
-	"Relentless Rider's Bonegrasps":  {id: 249974, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
-	"Relentless Rider's Legguards":   {id: 249972, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
-	"Relentless Rider's Chain":       {id: 249969, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: false},
+	"Relentless Rider's Bonegrasps":  {id: 249971, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
+	"Relentless Rider's Legguards":   {id: 249969, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 
 	// Demon Hunter — Devouring Reaver's Sheathe
 	"Devouring Reaver's Intake":          {id: 250033, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
@@ -1472,7 +1499,7 @@ var knownItems = map[string]knownItemDef{
 	// Evoker — Livery of the Black Talon
 	"Hornhelm of the Black Talon":         {id: 249997, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Beacons of the Black Talon":          {id: 249995, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
-	"Frenzyward of the Black Talon":       {id: 249993, sourceType: "RAID", sourceName: "The Dreamrift", source: "thedreamrift", isTier: true},
+	"Frenzyward of the Black Talon":       {id: 250000, sourceType: "RAID", sourceName: "The Dreamrift", source: "thedreamrift", isTier: true},
 	"Enforcer's Grips of the Black Talon": {id: 249998, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Greaves of the Black Talon":          {id: 249996, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Spelltreads of the Black Talon":      {id: 249999, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: false},
@@ -1484,13 +1511,13 @@ var knownItems = map[string]knownItemDef{
 	"Primal Sentry's Legguards":   {id: 249987, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 
 	// Mage — Voidbreaker's Accordance
-	"Voidbreaker's Veil":         {id: 249985, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
-	"Voidbreaker's Leyline Nexi": {id: 249983, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
-	"Voidbreaker's Robe":         {id: 249986, sourceType: "RAID", sourceName: "The Dreamrift", source: "thedreamrift", isTier: true},
+	"Voidbreaker's Veil":         {id: 250060, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
+	"Voidbreaker's Leyline Nexi": {id: 250058, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
+	"Voidbreaker's Robe":         {id: 250063, sourceType: "RAID", sourceName: "The Dreamrift", source: "thedreamrift", isTier: true},
 	"Voidbreaker's Gloves":       {id: 250061, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
-	"Voidbreaker's Britches":     {id: 249984, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
+	"Voidbreaker's Britches":     {id: 250059, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Voidbreaker's Sage Cord":    {id: 250057, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: false},
-	"Voidbreaker's Treads":       {id: 249982, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: false},
+	"Voidbreaker's Treads":       {id: 250062, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: false},
 
 	// Monk — Way of Ra-den's Chosen
 	"Fearsome Visage of Ra-den's Chosen": {id: 250015, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
@@ -1499,8 +1526,8 @@ var knownItems = map[string]knownItemDef{
 	"Thunderfists of Ra-den's Chosen":    {id: 250016, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Swiftsweepers of Ra-den's Chosen":   {id: 250014, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Storm Crashers of Ra-den's Chosen":  {id: 250017, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: false},
-	"Strikeguards of Ra-den's Chosen":    {id: 250019, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: false},
-	"Windwrap of Ra-den's Chosen":        {id: 250020, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: false},
+	"Strikeguards of Ra-den's Chosen":    {id: 250011, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: false},
+	"Windwrap of Ra-den's Chosen":        {id: 250010, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: false},
 
 	// Paladin — Luminant Verdict's Vestments
 	"Luminant Verdict's Unwavering Gaze":  {id: 249961, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
@@ -1508,7 +1535,6 @@ var knownItems = map[string]knownItemDef{
 	"Luminant Verdict's Divine Warplate":  {id: 249964, sourceType: "RAID", sourceName: "The Dreamrift", source: "thedreamrift", isTier: true},
 	"Luminant Verdict's Gauntlets":        {id: 249962, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Luminant Verdict's Greaves":          {id: 249960, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
-	"Aetherlume Stompers":                 {id: 251220, sourceType: "RAID", sourceName: "March on Quel'Danas", source: "marchonqueldanas", bossName: "Midnight Falls"},
 
 	// Priest — Blind Oath's Burden
 	"Blind Oath's Winged Crest": {id: 250051, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
@@ -1528,31 +1554,457 @@ var knownItems = map[string]knownItemDef{
 
 	// Shaman — Mantle of the Primal Core
 	"Locus of the Primal Core":      {id: 249979, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
-	"Tempests of the Primal Core":   {id: 249980, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
-	"Embrace of the Primal Core":    {id: 249976, sourceType: "RAID", sourceName: "The Dreamrift", source: "thedreamrift", isTier: true},
-	"Earthgrips of the Primal Core": {id: 249975, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
-	"Guardian of the Primal Core":   {id: 249965, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
-	"Ceinture of the Primal Core":   {id: 249977, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: false},
+	"Tempests of the Primal Core":   {id: 249977, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
+	"Embrace of the Primal Core":    {id: 249982, sourceType: "RAID", sourceName: "The Dreamrift", source: "thedreamrift", isTier: true},
+	"Earthgrips of the Primal Core": {id: 249980, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
+	"Guardian of the Primal Core":   {id: 249974, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
+	"Ceinture of the Primal Core":   {id: 249976, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: false},
 	"Leggings of the Primal Core":   {id: 249978, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 
 	// Warlock — Reign of the Abyssal Immolator
 	"Abyssal Immolator's Smoldering Flames": {id: 250042, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
-	"Abyssal Immolator's Fury":              {id: 250046, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Abyssal Immolator's Dreadrobe":         {id: 250045, sourceType: "RAID", sourceName: "The Dreamrift", source: "thedreamrift", isTier: true},
-	"Abyssal Immolator's Grasps":            {id: 250040, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
-	"Abyssal Immolator's Pillars":           {id: 250043, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
+	"Abyssal Immolator's Grasps":            {id: 250043, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
+	"Abyssal Immolator's Pillars":           {id: 250041, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Abyssal Immolator's Blazing Core":      {id: 250039, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: false},
 
-	// Renamed via hotfix — Icy Veins still uses old name
-	"Scabrous Zombie Leather Belt": {id: 49810, sourceType: "DUNGEON", sourceName: "Pit of Saron", source: "pitofsaron", bossName: "Ick"},
+	// API canonical name is "Scabrous Zombie Belt"; Icy Veins uses "Scabrous Zombie Leather Belt".
+	// Alias at scraper boundary handles the Icy Veins variant.
+	"Scabrous Zombie Belt": {id: 49810, sourceType: "DUNGEON", sourceName: "Pit of Saron", source: "pitofsaron", bossName: "Ick"},
 
 	"Night Ender's Tusks":       {id: 249952, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Night Ender's Pauldrons":   {id: 249950, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Night Ender's Breastplate": {id: 249955, sourceType: "RAID", sourceName: "The Dreamrift", source: "thedreamrift", isTier: true},
 	"Night Ender's Chausses":    {id: 249951, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
 	"Night Ender's Fists":       {id: 249953, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: true},
-	"Night Ender's Girdle":      {id: 249954, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: false},
-	"Night Ender's Greatboots":  {id: 249956, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: false},
+	"Night Ender's Girdle":      {id: 249949, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: false},
+	"Night Ender's Greatboots":  {id: 249954, sourceType: "RAID", sourceName: "The Voidspire", source: "thevoidspire", isTier: false},
+}
+
+// ============================================================
+// Item validator
+// ============================================================
+
+// fetchItemWithRetry calls fetchItem with exponential backoff for transient errors.
+// On 429 responses, backoff floor is raised to 5s. On 404, returns immediately
+// (not transient). Max 3 retries.
+func (c *BlizzardClient) fetchItemWithRetry(itemID int) (*BlizzardItem, error) {
+	maxRetries := 3
+	backoff := 2 * time.Second
+
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		if attempt > 0 {
+			time.Sleep(backoff)
+			backoff *= 2
+		}
+
+		item, err := c.fetchItem(itemID)
+		if err == nil {
+			return item, nil
+		}
+
+		errStr := err.Error()
+
+		// 404 = item doesn't exist at this ID. Not transient — stop retrying.
+		if strings.Contains(errStr, "not found:") {
+			return nil, fmt.Errorf("404 not found")
+		}
+
+		// 429 = rate limited. Raise backoff floor to 5s and retry.
+		if strings.Contains(errStr, "HTTP 429") && attempt < maxRetries {
+			if backoff < 5*time.Second {
+				backoff = 5 * time.Second
+			}
+			continue
+		}
+
+		// 5xx or network errors — transient, keep retrying.
+		if attempt < maxRetries {
+			continue
+		}
+
+		return nil, fmt.Errorf("API error after %d retries: %s", maxRetries, errStr)
+	}
+
+	return nil, fmt.Errorf("unreachable")
+}
+
+// normalizeItemName prepares an item name for comparison. Lowercases, trims
+// whitespace, and normalises unicode punctuation (smart quotes etc).
+func normalizeItemName(name string) string {
+	s := strings.ToLower(strings.TrimSpace(name))
+	s = strings.ReplaceAll(s, "\u2019", "'") // right single quote → apostrophe
+	s = strings.ReplaceAll(s, "\u2018", "'") // left single quote → apostrophe
+	s = strings.ReplaceAll(s, "\u201c", "\"")
+	s = strings.ReplaceAll(s, "\u201d", "\"")
+	return s
+}
+
+type validationResult struct {
+	Name    string `json:"name"`
+	ID      int    `json:"id"`
+	Status  string `json:"status"`  // "PASS", "FAIL", "SKIP"
+	APIName string `json:"apiName"` // name returned by API (for FAIL)
+	Detail  string `json:"detail"`  // error detail (for SKIP)
+	IsTier  bool   `json:"isTier"`
+}
+
+const validationResultsPath = "data/validation_results.json"
+
+func validateItems(strict bool) error {
+	fmt.Println("=== GearPath knownItems Validator ===")
+	fmt.Println()
+
+	fmt.Print("Authenticating with Blizzard API... ")
+	blizzard, err := newBlizzardClient()
+	if err != nil {
+		return fmt.Errorf("auth failed: %w", err)
+	}
+	fmt.Println("OK")
+	fmt.Println()
+
+	// Sort keys for deterministic output.
+	names := make([]string, 0, len(knownItems))
+	for name := range knownItems {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	// Duplicate ID check — run before API validation.
+	idToNames := map[int][]string{}
+	for name, ki := range knownItems {
+		idToNames[ki.id] = append(idToNames[ki.id], name)
+	}
+	dupeGroups := 0
+	for id, owners := range idToNames {
+		if len(owners) > 1 {
+			sort.Strings(owners)
+			if dupeGroups == 0 {
+				fmt.Println("=== Duplicate IDs ===")
+			}
+			fmt.Printf("  id=%-8d shared by: %s\n", id, strings.Join(owners, ", "))
+			dupeGroups++
+		}
+	}
+	if dupeGroups > 0 {
+		fmt.Printf("  %d group(s) of duplicate IDs found — at least one entry per group is wrong.\n\n", dupeGroups)
+	} else {
+		fmt.Printf("No duplicate IDs found.\n\n")
+	}
+
+	// Alias integrity check — every alias value must exist in knownItems.
+	badAliases := 0
+	for from, to := range nameAliases {
+		if _, ok := knownItems[to]; !ok {
+			if badAliases == 0 {
+				fmt.Println("=== Broken Aliases ===")
+			}
+			fmt.Printf("  %q → %q (target not in knownItems)\n", from, to)
+			badAliases++
+		}
+	}
+	if badAliases > 0 {
+		fmt.Printf("  %d broken alias(es) — scraper will silently drop these items.\n\n", badAliases)
+	}
+
+	var results []validationResult
+	passed, failed, skipped := 0, 0, 0
+
+	fmt.Printf("Validating %d items against Blizzard API...\n\n", len(names))
+
+	for i, name := range names {
+		ki := knownItems[name]
+		fmt.Printf("  [%3d/%d] %-50s id=%-8d ", i+1, len(names), name, ki.id)
+
+		item, err := blizzard.fetchItemWithRetry(ki.id)
+		if err != nil {
+			errStr := err.Error()
+			if strings.Contains(errStr, "404") {
+				fmt.Printf("SKIP (404 — item not found)\n")
+				results = append(results, validationResult{
+					Name: name, ID: ki.id, Status: "SKIP",
+					Detail: "404 not found", IsTier: ki.isTier,
+				})
+			} else {
+				fmt.Printf("SKIP (API error: %s)\n", errStr)
+				results = append(results, validationResult{
+					Name: name, ID: ki.id, Status: "SKIP",
+					Detail: errStr, IsTier: ki.isTier,
+				})
+			}
+			skipped++
+			continue
+		}
+
+		if normalizeItemName(item.Name) == normalizeItemName(name) {
+			fmt.Printf("PASS\n")
+			results = append(results, validationResult{
+				Name: name, ID: ki.id, Status: "PASS",
+				APIName: item.Name, IsTier: ki.isTier,
+			})
+			passed++
+		} else {
+			fmt.Printf("FAIL — API says: %q\n", item.Name)
+			results = append(results, validationResult{
+				Name: name, ID: ki.id, Status: "FAIL",
+				APIName: item.Name, IsTier: ki.isTier,
+			})
+			failed++
+		}
+
+		// Rate limit: 30ms between calls (matches existing sourceMap pattern).
+		time.Sleep(30 * time.Millisecond)
+	}
+
+	// Print summary.
+	fmt.Println()
+	fmt.Println("=== Validation Summary ===")
+	fmt.Printf("  Total:   %d\n", len(names))
+	fmt.Printf("  PASS:    %d\n", passed)
+	fmt.Printf("  FAIL:    %d\n", failed)
+	fmt.Printf("  SKIP:    %d\n", skipped)
+	fmt.Println()
+
+	if failed > 0 {
+		fmt.Println("=== FAILURES (name mismatch) ===")
+		for _, r := range results {
+			if r.Status == "FAIL" {
+				tierTag := ""
+				if r.IsTier {
+					tierTag = " [TIER]"
+				}
+				fmt.Printf("  %-50s id=%-8d → API name: %q%s\n", r.Name, r.ID, r.APIName, tierTag)
+			}
+		}
+		fmt.Println()
+	}
+
+	if skipped > 0 {
+		fmt.Println("=== SKIPPED (API errors / 404) ===")
+		for _, r := range results {
+			if r.Status == "SKIP" {
+				tierTag := ""
+				if r.IsTier {
+					tierTag = " [TIER]"
+				}
+				fmt.Printf("  %-50s id=%-8d → %s%s\n", r.Name, r.ID, r.Detail, tierTag)
+			}
+		}
+		fmt.Println()
+	}
+
+	// Dump results to JSON for use by resolve-items.
+	if data, err := json.MarshalIndent(results, "", "  "); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to marshal validation results: %v\n", err)
+	} else {
+		if err := os.MkdirAll(filepath.Dir(validationResultsPath), 0755); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to create directory for %s: %v\n", validationResultsPath, err)
+		} else if err := os.WriteFile(validationResultsPath, data, 0644); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to write %s: %v\n", validationResultsPath, err)
+		} else {
+			fmt.Printf("Results written to %s\n\n", validationResultsPath)
+		}
+	}
+
+	if failed > 0 {
+		fmt.Printf("VALIDATION FAILED: %d item(s) have mismatched names.\n", failed)
+		fmt.Println("The knownItems map has incorrect ID-to-name associations.")
+		fmt.Println("Fix the entries above before regenerating data.")
+		return fmt.Errorf("%d validation failure(s)", failed)
+	}
+
+	if strict && skipped > 0 {
+		fmt.Printf("STRICT MODE: %d item(s) could not be verified.\n", skipped)
+		return fmt.Errorf("%d unverifiable item(s) in strict mode", skipped)
+	}
+
+	if skipped > 0 {
+		fmt.Printf("All verifiable items passed. %d item(s) skipped (review above).\n", skipped)
+	} else {
+		fmt.Println("All items validated successfully. ✓")
+	}
+
+	return nil
+}
+
+// ============================================================
+// Item resolver (scan-based)
+// ============================================================
+
+// maxScanRange caps how wide a neighborhood scan can be. If PASSed siblings
+// span a wider range than this, the item is skipped (resolve manually).
+const maxScanRange = 30
+
+// extractNameFamily returns the shared family name for grouping siblings.
+//
+// "of" suffix checked first: "Strikeguards of Ra-den's Chosen" → "of Ra-den's Chosen"
+// This must precede the possessive check because set names like "Ra-den's" contain
+// an apostrophe that would incorrectly match the possessive path.
+//
+// Possessive prefix: "Relentless Rider's Crown" → "Relentless Rider's"
+// Neither: returns "" (fall through to sourceType grouping).
+func extractNameFamily(name string) string {
+	if idx := strings.Index(name, " of the "); idx >= 0 {
+		return name[idx+1:]
+	}
+	if idx := strings.Index(name, " of "); idx >= 0 {
+		return name[idx+1:]
+	}
+	if idx := strings.LastIndex(name, "'s "); idx >= 0 {
+		return name[:idx+2]
+	}
+	return ""
+}
+
+func loadValidationResults() ([]validationResult, error) {
+	raw, err := os.ReadFile(validationResultsPath)
+	if err != nil {
+		return nil, fmt.Errorf("run 'go run . validate-items' first: %w", err)
+	}
+
+	info, err := os.Stat(validationResultsPath)
+	if err == nil && time.Since(info.ModTime()) > 10*time.Minute {
+		fmt.Fprintf(os.Stderr, "Warning: %s is older than 10 minutes — consider re-running validate-items\n\n", validationResultsPath)
+	}
+
+	var results []validationResult
+	if err := json.Unmarshal(raw, &results); err != nil {
+		return nil, fmt.Errorf("failed to parse %s: %w", validationResultsPath, err)
+	}
+	return results, nil
+}
+
+type sibling struct {
+	name string
+	id   int
+}
+
+func resolveItemsScan(names []string) error {
+	fmt.Println("=== GearPath Item Resolver (scan) ===")
+	fmt.Println()
+
+	results, err := loadValidationResults()
+	if err != nil {
+		return err
+	}
+
+	// Build set of PASSed items: name → id.
+	passed := map[string]int{}
+	for _, r := range results {
+		if r.Status == "PASS" {
+			passed[r.Name] = r.ID
+		}
+	}
+	fmt.Printf("Loaded %d PASSed items from %s\n\n", len(passed), validationResultsPath)
+
+	fmt.Print("Authenticating with Blizzard API... ")
+	blizzard, err := newBlizzardClient()
+	if err != nil {
+		return fmt.Errorf("auth failed: %w", err)
+	}
+	fmt.Println("OK")
+	fmt.Println()
+
+	resolved, ambiguous, notFound, skippedCount := 0, 0, 0, 0
+
+	for i, name := range names {
+		fmt.Printf("[%2d/%d] %s\n", i+1, len(names), name)
+
+		// Single pass: find PASSed siblings by name family.
+		family := extractNameFamily(name)
+		var siblings []sibling
+
+		if family != "" {
+			for pName, pID := range passed {
+				if extractNameFamily(pName) == family {
+					siblings = append(siblings, sibling{name: pName, id: pID})
+				}
+			}
+		}
+
+		// Fallback: same sourceType+sourceName from knownItems.
+		if len(siblings) == 0 {
+			if ki, ok := knownItems[name]; ok {
+				for pName, pID := range passed {
+					if pki, ok2 := knownItems[pName]; ok2 {
+						if pki.sourceType == ki.sourceType && pki.sourceName == ki.sourceName {
+							siblings = append(siblings, sibling{name: pName, id: pID})
+						}
+					}
+				}
+			}
+		}
+
+		if len(siblings) == 0 {
+			fmt.Printf("       SKIP (no PASSed siblings to derive scan range)\n")
+			skippedCount++
+			continue
+		}
+
+		// Derive scan range from sibling IDs.
+		sort.Slice(siblings, func(a, b int) bool { return siblings[a].id < siblings[b].id })
+		lo := siblings[0].id - 5
+		hi := siblings[len(siblings)-1].id + 5
+
+		if hi-lo > maxScanRange {
+			fmt.Printf("       SKIP (sibling range %d–%d exceeds %d-ID cap)\n", lo, hi, maxScanRange)
+			skippedCount++
+			continue
+		}
+
+		// Print sibling summary.
+		sibLabels := make([]string, len(siblings))
+		for j, s := range siblings {
+			sibLabels[j] = fmt.Sprintf("%s(%d)", s.name, s.id)
+		}
+		fmt.Printf("       siblings: %s\n", strings.Join(sibLabels, ", "))
+		fmt.Printf("       scan range: %d–%d\n", lo, hi)
+
+		// Scan the range.
+		// Scan the range. No ilvl filter needed — the sibling-derived neighborhood
+		// already constrains to Midnight-era IDs. The individual item API returns
+		// base ilvl (e.g. 197 for tier), not the difficulty-scaled display ilvl.
+		want := normalizeItemName(name)
+		type scanMatch struct {
+			id    int
+			name  string
+			level int
+		}
+		var matches []scanMatch
+		for id := lo; id <= hi; id++ {
+			item, err := blizzard.fetchItemWithRetry(id)
+			if err != nil {
+				continue
+			}
+			if normalizeItemName(item.Name) == want {
+				matches = append(matches, scanMatch{id: item.ID, name: item.Name, level: item.Level})
+			}
+			time.Sleep(30 * time.Millisecond)
+		}
+
+		if len(matches) == 0 {
+			fmt.Printf("       NOT_FOUND (scanned %d–%d, no exact match)\n", lo, hi)
+			notFound++
+		} else if len(matches) == 1 {
+			m := matches[0]
+			fmt.Printf("       RESOLVED  id=%-8d ilvl=%-4d name=%q\n", m.id, m.level, m.name)
+			resolved++
+		} else {
+			fmt.Printf("       AMBIGUOUS (%d matches — needs human review)\n", len(matches))
+			for _, m := range matches {
+				fmt.Printf("         id=%-8d ilvl=%-4d name=%q\n", m.id, m.level, m.name)
+			}
+			ambiguous++
+		}
+	}
+
+	fmt.Printf("\n=== Summary ===\n")
+	fmt.Printf("  RESOLVED:  %d\n", resolved)
+	fmt.Printf("  AMBIGUOUS: %d\n", ambiguous)
+	fmt.Printf("  NOT_FOUND: %d\n", notFound)
+	fmt.Printf("  SKIPPED:   %d\n", skippedCount)
+
+	return nil
 }
 
 // ============================================================
