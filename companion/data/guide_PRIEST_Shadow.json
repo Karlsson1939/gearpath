@@ -1,0 +1,64 @@
+{
+  "Class": "PRIEST",
+  "Spec": "Shadow",
+  "Updated": "2026-04-17",
+  "Stats": {
+    "Format": "ordered",
+    "Ordered": [
+      "Intellect",
+      "Haste",
+      "Mastery",
+      "Critical Strike",
+      "Versatility"
+    ],
+    "Percentage": null,
+    "Note": ""
+  },
+  "Gems": [
+    {
+      "Name": "Indecipherable Eversong Diamond",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Quick Amethyst",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Quick Lapis",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Masterful Lapis",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Masterful Peridot",
+      "Note": ""
+    }
+  ],
+  "Enchants": [
+    {
+      "Slot": "Weapon",
+      "Enchant": "Enchant Weapon - Arcane Mastery"
+    },
+    {
+      "Slot": "Chest",
+      "Enchant": "Enchant Chest - Mark of the Worldsoul Enchant Chest"
+    },
+    {
+      "Slot": "Legs",
+      "Enchant": "Sunfire Silk Spellthread Bright Linen Spellthread"
+    },
+    {
+      "Slot": "Rings",
+      "Enchant": "Enchant Ring - Silvermoon's Alacrity"
+    }
+  ],
+  "Consumables": {
+    "Flask": "Flask of the Magisters",
+    "Food": "Silvermoon Parade",
+    "Potion": "Light's Potential",
+    "WeaponOil": "Thalassian Phoenix Oil",
+    "AugRune": "Void-Touched Augment Rune"
+  }
+}

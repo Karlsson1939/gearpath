@@ -1,0 +1,64 @@
+{
+  "Class": "PALADIN",
+  "Spec": "Retribution",
+  "Updated": "2026-04-17",
+  "Stats": {
+    "Format": "ordered",
+    "Ordered": [
+      "Strength",
+      "Mastery",
+      "Critical Strike",
+      "Haste",
+      "Versatility"
+    ],
+    "Percentage": null,
+    "Note": ""
+  },
+  "Gems": [
+    {
+      "Name": "Indecipherable Eversong Diamond",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Deadly Amethyst",
+      "Note": ""
+    }
+  ],
+  "Enchants": [
+    {
+      "Slot": "Weapon",
+      "Enchant": "Enchant Weapon - Acuity of the Ren'dorei"
+    },
+    {
+      "Slot": "Helm",
+      "Enchant": "Enchant Helm - Empowered Blessing of Speed"
+    },
+    {
+      "Slot": "Shoulders",
+      "Enchant": "Enchant Shoulders - Akil'zon's Swiftness"
+    },
+    {
+      "Slot": "Chest",
+      "Enchant": "Enchant Chest - Mark of the Worldsoul"
+    },
+    {
+      "Slot": "Legs",
+      "Enchant": "Forest Hunter's Armor Kit"
+    },
+    {
+      "Slot": "Boots",
+      "Enchant": "Enchant Boots - Farstrider's Hunt"
+    },
+    {
+      "Slot": "Rings",
+      "Enchant": "Enchant Ring - Eyes of the Eagle"
+    }
+  ],
+  "Consumables": {
+    "Flask": "Flask of the Magisters",
+    "Food": "Royal Roast",
+    "Potion": "Light's Potential",
+    "WeaponOil": "Thalassian Phoenix Oil",
+    "AugRune": "Void-Touched Augment Rune"
+  }
+}

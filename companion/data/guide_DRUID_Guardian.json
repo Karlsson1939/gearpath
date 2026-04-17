@@ -1,0 +1,62 @@
+{
+  "Class": "DRUID",
+  "Spec": "Guardian",
+  "Updated": "2026-04-17",
+  "Stats": {
+    "Format": "ordered",
+    "Ordered": [
+      "Haste",
+      "Versatility",
+      "Critical Strike = Mastery"
+    ],
+    "Percentage": null,
+    "Note": ""
+  },
+  "Gems": [
+    {
+      "Name": "Indecipherable Eversong Diamond",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Versatile Peridot",
+      "Note": ""
+    }
+  ],
+  "Enchants": [
+    {
+      "Slot": "Weapon",
+      "Enchant": "Enchant Weapon - Berserker's Rage"
+    },
+    {
+      "Slot": "Shoulders",
+      "Enchant": "Enchant Shoulders - Akil'zon's Swiftness"
+    },
+    {
+      "Slot": "Helm",
+      "Enchant": "Enchant Helm - Empowered Blessing of Speed"
+    },
+    {
+      "Slot": "Chest",
+      "Enchant": "Enchant Chest - Mark of the Worldsoul"
+    },
+    {
+      "Slot": "Legs",
+      "Enchant": "Forest Hunter's Armor Kit"
+    },
+    {
+      "Slot": "Boots",
+      "Enchant": "Enchant Boots - Farstrider's Hunt"
+    },
+    {
+      "Slot": "Rings",
+      "Enchant": "Enchant Ring - Silvermoon's Alacrity"
+    }
+  ],
+  "Consumables": {
+    "Flask": "Flask of the Blood Knights",
+    "Food": "Silvermoon Parade",
+    "Potion": "Draught of Rampant Abandon",
+    "WeaponOil": "Thalassian Phoenix Oil",
+    "AugRune": ""
+  }
+}

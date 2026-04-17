@@ -1,0 +1,52 @@
+{
+  "Class": "MAGE",
+  "Spec": "Arcane",
+  "Updated": "2026-04-17",
+  "Stats": {
+    "Format": "ordered",
+    "Ordered": [
+      "Intellect",
+      "Mastery",
+      "Versatility",
+      "Critical Strike",
+      "Haste"
+    ],
+    "Percentage": null,
+    "Note": ""
+  },
+  "Gems": [
+    {
+      "Name": "Indecipherable Eversong Diamond",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Versatile Amethyst",
+      "Note": ""
+    }
+  ],
+  "Enchants": [
+    {
+      "Slot": "Chest",
+      "Enchant": "Enchant Chest - Mark of the Worldsoul"
+    },
+    {
+      "Slot": "Legs",
+      "Enchant": "Arcanoweave Spellthread"
+    },
+    {
+      "Slot": "Rings",
+      "Enchant": "Enchant Ring - Eyes of the Eagle"
+    },
+    {
+      "Slot": "Weapon",
+      "Enchant": "Enchant Weapon - Acuity of the Ren'dorei"
+    }
+  ],
+  "Consumables": {
+    "Flask": "",
+    "Food": "Quel'dorei Medley",
+    "Potion": "Light's Potential",
+    "WeaponOil": "Thalassian Phoenix Oil",
+    "AugRune": "Void-Touched Augment Rune"
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "Class": "SHAMAN",
+  "Spec": "Elemental",
+  "Updated": "2026-04-17",
+  "Stats": {
+    "Format": "percentage",
+    "Ordered": null,
+    "Percentage": [
+      {
+        "Stat": "Mastery",
+        "Pct": 50
+      },
+      {
+        "Stat": "Haste",
+        "Pct": 25
+      },
+      {
+        "Stat": "Critical Strike",
+        "Pct": 25
+      },
+      {
+        "Stat": "Versatility",
+        "Pct": 0
+      }
+    ],
+    "Note": ""
+  },
+  "Gems": [
+    {
+      "Name": "Powerful Eversong Diamond",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Deadly Amethyst",
+      "Note": ""
+    }
+  ],
+  "Enchants": [
+    {
+      "Slot": "Weapon",
+      "Enchant": "Enchant Weapon - Arcane Mastery"
+    },
+    {
+      "Slot": "Helm",
+      "Enchant": "Enchant Helm - Empowered Blessing of Speed"
+    },
+    {
+      "Slot": "Chest",
+      "Enchant": "Enchant Chest - Mark of the Worldsoul"
+    },
+    {
+      "Slot": "Shoulders",
+      "Enchant": "Enchant Shoulders - Akil'zon's Swiftness"
+    },
+    {
+      "Slot": "Legs",
+      "Enchant": "Sunfire Silk Spellthread"
+    },
+    {
+      "Slot": "Boots",
+      "Enchant": "Enchant Boots - Farstrider's Hunt"
+    },
+    {
+      "Slot": "Rings",
+      "Enchant": "Enchant Ring - Eyes of the Eagle"
+    }
+  ],
+  "Consumables": {
+    "Flask": "Flask of the Magisters",
+    "Food": "Silvermoon Parade",
+    "Potion": "Light's Potential",
+    "WeaponOil": "Thalassian Phoenix Oil",
+    "AugRune": "Void-Touched Augment Rune"
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "Class": "DEATHKNIGHT",
+  "Spec": "Unholy",
+  "Updated": "2026-04-17",
+  "Stats": {
+    "Format": "ordered",
+    "Ordered": [
+      "Mastery",
+      "Critical Strike",
+      "Haste",
+      "Versatility"
+    ],
+    "Percentage": null,
+    "Note": ""
+  },
+  "Gems": [
+    {
+      "Name": "Indecipherable Eversong Diamond",
+      "Note": ""
+    },
+    {
+      "Name": "Powerful Eversong Diamond",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Deadly Amethyst",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Masterful Lapis",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Masterful Peridot",
+      "Note": ""
+    }
+  ],
+  "Enchants": [
+    {
+      "Slot": "Helm",
+      "Enchant": "Enchant Helm - Empowered Rune of Avoidance"
+    },
+    {
+      "Slot": "Shoulders",
+      "Enchant": "Enchant Shoulders - Amirdrassil's Grace"
+    },
+    {
+      "Slot": "Chest",
+      "Enchant": "Enchant Chest - Mark of the Worldsoul"
+    },
+    {
+      "Slot": "Legs",
+      "Enchant": "Forest Hunter's Armor Kit"
+    },
+    {
+      "Slot": "Boots",
+      "Enchant": "Enchant Boots - Lynx's Dexterity"
+    },
+    {
+      "Slot": "Rings",
+      "Enchant": "Enchant Ring - Zul'jin's Mastery"
+    },
+    {
+      "Slot": "Weapon",
+      "Enchant": "Enchant Ring - Zul'jin's Mastery due to the high Mastery value"
+    }
+  ],
+  "Consumables": {
+    "Flask": "Flask of the Shattered Sun",
+    "Food": "Harandar Celebration",
+    "Potion": "Draught of Rampant Abandon",
+    "WeaponOil": "Thalassian Phoenix Oil",
+    "AugRune": ""
+  }
+}

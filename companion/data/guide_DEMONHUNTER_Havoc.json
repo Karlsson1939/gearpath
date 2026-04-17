@@ -1,0 +1,64 @@
+{
+  "Class": "DEMONHUNTER",
+  "Spec": "Havoc",
+  "Updated": "2026-04-17",
+  "Stats": {
+    "Format": "ordered",
+    "Ordered": [
+      "Agility",
+      "Critical Strike",
+      "Mastery",
+      "Haste",
+      "Versatility"
+    ],
+    "Percentage": null,
+    "Note": ""
+  },
+  "Gems": [
+    {
+      "Name": "Indecipherable Eversong Diamond",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Deadly Amethyst",
+      "Note": ""
+    }
+  ],
+  "Enchants": [
+    {
+      "Slot": "Off Hand",
+      "Enchant": "Enchant Weapon - Acuity of the Ren'dorei"
+    },
+    {
+      "Slot": "Helm",
+      "Enchant": "Enchant Helm - Empowered Rune of Avoidance"
+    },
+    {
+      "Slot": "Shoulders",
+      "Enchant": "Enchant Shoulders - Amirdrassil's Grace"
+    },
+    {
+      "Slot": "Chest",
+      "Enchant": "Enchant Chest - Mark of the Worldsoul"
+    },
+    {
+      "Slot": "Legs",
+      "Enchant": "Forest Hunter's Armor Kit"
+    },
+    {
+      "Slot": "Boots",
+      "Enchant": "Enchant Boots - Lynx's Dexterity"
+    },
+    {
+      "Slot": "Rings",
+      "Enchant": "Enchant Ring - Eyes of the Eagle"
+    }
+  ],
+  "Consumables": {
+    "Flask": "Flask of the Shattered Sun",
+    "Food": "Silvermoon Parade",
+    "Potion": "Light's Potential",
+    "WeaponOil": "Thalassian Phoenix Oil",
+    "AugRune": "Void-Touched Augment Rune"
+  }
+}

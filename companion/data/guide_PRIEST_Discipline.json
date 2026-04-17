@@ -1,0 +1,23 @@
+{
+  "Class": "PRIEST",
+  "Spec": "Discipline",
+  "Updated": "2026-04-17",
+  "Stats": {
+    "Format": "ordered",
+    "Ordered": [
+      "Mastery",
+      "Versatility"
+    ],
+    "Percentage": null,
+    "Note": ""
+  },
+  "Gems": null,
+  "Enchants": null,
+  "Consumables": {
+    "Flask": "",
+    "Food": "",
+    "Potion": "",
+    "WeaponOil": "",
+    "AugRune": ""
+  }
+}

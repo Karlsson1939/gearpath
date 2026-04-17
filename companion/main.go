@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -676,6 +677,22 @@ func main() {
 				os.Exit(1)
 			}
 			return
+			case "scrape-guide":
+				target := ""
+				if len(os.Args) > 2 {
+					target = os.Args[2]
+				}
+				if err := scrapeGuideAll(target); err != nil {
+					fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+					os.Exit(1)
+				}
+				return
+			case "generate-guide":
+				if err := generateGuide(); err != nil {
+					fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+					os.Exit(1)
+				}
+				return
 		}
 	}
 
@@ -1795,5 +1812,691 @@ func initSpecs() error {
 	}
 
 	fmt.Printf("\nDone. Created: %d, Skipped: %d\n", created, skipped)
+	return nil
+}
+// ============================================================
+// Guide scraper — stat priority + gems/enchants/consumables
+// ============================================================
+
+// GuideData holds all scraped guide info for one spec.
+type GuideData struct {
+	Class       string
+	Spec        string
+	Updated     string
+	Stats       StatPriority
+	Gems        []GemEntry
+	Enchants    []EnchantEntry
+	Consumables ConsumableSet
+}
+
+type StatPriority struct {
+	Format     string // "ordered" or "percentage"
+	Ordered    []string
+	Percentage []StatPct
+	Note       string
+}
+
+type StatPct struct {
+	Stat string
+	Pct  int
+}
+
+type GemEntry struct {
+	Name string
+	Note string
+}
+
+type EnchantEntry struct {
+	Slot    string
+	Enchant string
+}
+
+type ConsumableSet struct {
+	Flask     string
+	Food      string
+	Potion    string
+	WeaponOil string
+	AugRune   string
+}
+
+type GuideTemplateData struct {
+	Generated string
+	Specs     []GuideData
+}
+
+// URL slug suffixes for guide pages — same base slug as BiS
+const (
+	statSuffix  = "-stat-priority"
+	gearSuffix  = "-gems-enchants-consumables"
+)
+
+func scrapeGuideAll(target string) error {
+	fmt.Println("Starting headless browser for guide scraping...")
+
+	opts := append(chromedp.DefaultExecAllocatorOptions[:],
+		chromedp.Flag("headless", true),
+		chromedp.Flag("disable-gpu", true),
+		chromedp.Flag("no-sandbox", true),
+		chromedp.UserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"),
+	)
+
+	allocCtx, allocCancel := chromedp.NewExecAllocator(context.Background(), opts...)
+	defer allocCancel()
+
+	browserCtx, browserCancel := chromedp.NewContext(allocCtx)
+	defer browserCancel()
+
+	if err := chromedp.Run(browserCtx, chromedp.Navigate("about:blank")); err != nil {
+		return fmt.Errorf("failed to start browser: %w", err)
+	}
+	fmt.Println("Browser ready.\n")
+
+	today := time.Now().Format("2006-01-02")
+	success, failed, skipped := 0, 0, 0
+
+	for _, s := range allSpecs {
+		key := s.Class + "_" + s.Spec
+		if target != "" && key != target {
+			continue
+		}
+
+		slug, ok := icyVeinsSlugs[key]
+		if !ok {
+			fmt.Printf("  No slug for %s — skipping\n", key)
+			skipped++
+			continue
+		}
+
+		fmt.Printf("Scraping guide %-14s %-14s ... ", s.Class, s.Spec)
+
+		guide, err := scrapeGuideSpec(browserCtx, slug, s.Class, s.Spec, today)
+		if err != nil {
+			fmt.Printf("FAILED (%v)\n", err)
+			failed++
+			continue
+		}
+
+		filename := fmt.Sprintf("data/guide_%s_%s.json", s.Class, s.Spec)
+		data, _ := json.MarshalIndent(guide, "", "  ")
+		if err := os.WriteFile(filename, data, 0644); err != nil {
+			fmt.Printf("FAILED (write: %v)\n", err)
+			failed++
+			continue
+		}
+
+		fmt.Printf("OK\n")
+		success++
+		time.Sleep(1200 * time.Millisecond) // be polite
+	}
+
+	fmt.Printf("\nDone. OK: %d, Failed: %d, Skipped: %d\n", success, failed, skipped)
+
+	if failed == 0 {
+		fmt.Println("Run 'go run . generate-guide' to produce GearPath_Stats.lua")
+	}
+	return nil
+}
+
+func scrapeGuideSpec(browserCtx context.Context, slug, class, spec, today string) (*GuideData, error) {
+	guide := &GuideData{
+		Class:   class,
+		Spec:    spec,
+		Updated: today,
+	}
+
+	// ── Stat priority page ───────────────────────────────────────────────────
+	statURL := fmt.Sprintf("https://www.icy-veins.com/wow/%s%s", slug, statSuffix)
+	var statText string
+	pageCtx, pageCancel := context.WithTimeout(browserCtx, 30*time.Second)
+	err := chromedp.Run(pageCtx,
+		chromedp.Navigate(statURL),
+		chromedp.WaitVisible(".page_content", chromedp.ByQuery),
+		chromedp.Sleep(400*time.Millisecond),
+		chromedp.Evaluate(`document.querySelector('.page_content').innerText`, &statText),
+	)
+	pageCancel()
+	if err != nil {
+		return nil, fmt.Errorf("stat page: %w", err)
+	}
+	guide.Stats = parseStatPriority(statText)
+
+	// ── Gems/enchants/consumables page ───────────────────────────────────────
+	consumURL := fmt.Sprintf("https://www.icy-veins.com/wow/%s%s", slug, gearSuffix)
+	var consumText string
+	pageCtx2, pageCancel2 := context.WithTimeout(browserCtx, 30*time.Second)
+	err = chromedp.Run(pageCtx2,
+		chromedp.Navigate(consumURL),
+		chromedp.WaitVisible(".page_content", chromedp.ByQuery),
+		chromedp.Sleep(400*time.Millisecond),
+		chromedp.Evaluate(`document.querySelector('.page_content').innerText`, &consumText),
+	)
+	pageCancel2()
+	if err != nil {
+		return nil, fmt.Errorf("consumables page: %w", err)
+	}
+
+	guide.Gems = parseGems(consumText)
+	guide.Enchants = parseEnchants(consumText)
+	guide.Consumables = parseConsumables(consumText)
+
+	return guide, nil
+}
+
+// ── Stat priority parser ─────────────────────────────────────────────────────
+
+func parseStatPriority(text string) StatPriority {
+	sp := StatPriority{}
+
+	knownStats := []string{
+		"Agility", "Strength", "Intellect", "Stamina",
+		"Haste", "Mastery", "Critical Strike", "Versatility",
+		"Item Level", "Armor",
+	}
+
+	// Try percentage format first: "X% into StatName"
+	pctRegex := regexp.MustCompile(`(\d+)%\s+into\s+([A-Za-z ]+)`)
+	pctMatches := pctRegex.FindAllStringSubmatch(text, -1)
+	if len(pctMatches) >= 2 {
+		sp.Format = "percentage"
+		for _, m := range pctMatches {
+			pct, _ := strconv.Atoi(m[1])
+			stat := strings.TrimSpace(m[2])
+			stat = strings.TrimSuffix(stat, " FAQ")
+			stat = strings.TrimSuffix(stat, " Gems")
+			stat = strings.TrimSuffix(stat, " The")
+			sp.Percentage = append(sp.Percentage, StatPct{Stat: stat, Pct: pct})
+		}
+		return sp
+	}
+
+	// Try inline ordered format: "Stat1 > Stat2 > Stat3" on a single line
+	lines := strings.Split(text, "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if strings.Count(line, ">") >= 2 && len(line) < 150 {
+			sp.Format = "ordered"
+			parts := strings.Split(line, ">")
+			for _, p := range parts {
+				p = strings.TrimSpace(p)
+				if p != "" && len(p) < 35 {
+					sp.Ordered = append(sp.Ordered, p)
+				}
+			}
+			if len(sp.Ordered) >= 2 {
+				return sp
+			}
+			sp.Ordered = nil
+		}
+	}
+
+	// Try one-stat-per-line format: consecutive lines that are each a known stat
+	// e.g. Windwalker Monk: Agility / Haste / Critical Strike / Mastery / Versatility
+	var consecutiveStats []string
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		isKnown := false
+		for _, stat := range knownStats {
+			if strings.EqualFold(line, stat) {
+				isKnown = true
+				break
+			}
+		}
+		// Also accept "Stat = Stat" or "Stat, Stat" combos on one line
+		if !isKnown && strings.ContainsAny(line, "=,") && len(line) < 50 {
+			parts := regexp.MustCompile(`[=,]`).Split(line, -1)
+			allStats := true
+			for _, p := range parts {
+				p = strings.TrimSpace(p)
+				found := false
+				for _, stat := range knownStats {
+					if strings.EqualFold(p, stat) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					allStats = false
+					break
+				}
+			}
+			if allStats {
+				isKnown = true
+			}
+		}
+		if isKnown {
+			consecutiveStats = append(consecutiveStats, line)
+		} else if len(consecutiveStats) >= 2 {
+			// End of consecutive block — we have enough
+			break
+		} else {
+			consecutiveStats = nil
+		}
+	}
+	if len(consecutiveStats) >= 2 {
+		sp.Format = "ordered"
+		sp.Ordered = consecutiveStats
+		return sp
+	}
+
+	// Try "stat priority[...]:" followed by ordered list using regex
+	orderedRegex := regexp.MustCompile(`(?i)stat priority[^:]*:\s*\n?((?:[A-Za-z ]+(?:=|>|\n)){2,})`)
+	if m := orderedRegex.FindStringSubmatch(text); m != nil {
+		sp.Format = "ordered"
+		parts := regexp.MustCompile(`[>\n]`).Split(m[1], -1)
+		for _, p := range parts {
+			p = strings.TrimSpace(p)
+			p = strings.Trim(p, "=")
+			if p != "" && len(p) < 30 {
+				sp.Ordered = append(sp.Ordered, p)
+			}
+		}
+		if len(sp.Ordered) >= 2 {
+			return sp
+		}
+	}
+
+	// Last resort: note
+	sp.Format = "ordered"
+	sp.Note = extractStatNote(text)
+	return sp
+}
+
+func extractStatNote(text string) string {
+	// Find the first sentence mentioning multiple stats
+	sentences := strings.Split(text, ".")
+	for _, s := range sentences {
+		s = strings.TrimSpace(s)
+		statWords := []string{"Haste", "Mastery", "Critical Strike", "Versatility", "Crit"}
+		count := 0
+		for _, w := range statWords {
+			if strings.Contains(s, w) {
+				count++
+			}
+		}
+		if count >= 2 && len(s) < 200 {
+			return s
+		}
+	}
+	return ""
+}
+
+// ── Gems parser ──────────────────────────────────────────────────────────────
+// The page text contains icon characters (stripped by innerText) leaving
+// double-spaces before item names. We search for gem stone keywords directly.
+
+// knownGems is the authoritative list of Midnight Season 1 gem names.
+// Parsing simply scans the guide text for any known gem name as a substring,
+// exactly like knownConsumables — no regex, no heuristics.
+var knownGems = []string{
+	// Prismatic (main stat) — Diamond slot
+	"Indecipherable Eversong Diamond",
+	"Powerful Eversong Diamond",
+	"Thalassian Diamond",
+
+	// Red — Amethyst slot (Strength/Agility/Intellect hybrids)
+	"Flawless Deadly Amethyst",
+	"Flawless Quick Amethyst",
+	"Flawless Masterful Amethyst",
+	"Flawless Versatile Amethyst",
+
+	// Blue — Lapis slot
+	"Flawless Deadly Lapis",
+	"Flawless Quick Lapis",
+	"Flawless Masterful Lapis",
+	"Flawless Versatile Lapis",
+
+	// Yellow — Peridot slot
+	"Flawless Deadly Peridot",
+	"Flawless Quick Peridot",
+	"Flawless Masterful Peridot",
+	"Flawless Versatile Peridot",
+
+	// Jewelcrafting-only
+	"The Dazzling Diamond Epic",
+}
+
+func parseGems(text string) []GemEntry {
+	section := extractSectionByHeading(text,
+		[]string{"Recommended Gems", "Best Gems"},
+		[]string{"Enchants for", "Best Enchants for", "Best Enchants", "Changelog"},
+	)
+	if section == "" {
+		return nil
+	}
+
+	// Normalise double spaces (stripped icon characters before item names)
+	section = regexp.MustCompile(`\s{2,}`).ReplaceAllString(section, " ")
+
+	var gems []GemEntry
+	seen := map[string]bool{}
+	sectionLower := strings.ToLower(section)
+
+	for _, name := range knownGems {
+		if strings.Contains(sectionLower, strings.ToLower(name)) && !seen[name] {
+			seen[name] = true
+			gems = append(gems, GemEntry{Name: name})
+		}
+	}
+	return gems
+}
+
+// ── Enchants parser ──────────────────────────────────────────────────────────
+
+func parseEnchants(text string) []EnchantEntry {
+	var enchants []EnchantEntry
+
+	section := extractSectionByHeading(text,
+		[]string{"Enchants for", "Best Enchants for", "Best Enchants"},
+		[]string{"Consumable Recommendation", "Extra Consumable", "How to Choose", "Changelog"},
+	)
+	if section == "" {
+		return enchants
+	}
+
+	slotNames := []string{
+		"Weapon", "Off Hand", "Rings", "Ring", "Helmet", "Helm", "Head",
+		"Shoulder", "Shoulders", "Chest", "Legs", "Boots", "Feet",
+		"Cloak", "Back", "Bracers", "Wrist", "Waist", "Hands",
+	}
+
+	enchantPattern := regexp.MustCompile(`Enchant [A-Za-z]+ - [A-Za-z` + "`" + `' ]+`)
+	trailingNoise  := regexp.MustCompile(`\s+(until|or |when |as |if |\(|,|and )`)
+
+	extractEnchant := func(s string) string {
+		s = regexp.MustCompile(`\s{2,}`).ReplaceAllString(s, " ")
+		s = strings.TrimSpace(s)
+		if m := enchantPattern.FindString(s); m != "" {
+			m = strings.TrimSpace(m)
+			if idx := trailingNoise.FindStringIndex(m); idx != nil {
+				m = strings.TrimSpace(m[:idx[0]])
+			}
+			return m
+		}
+		if strings.Contains(s, "Kit") || strings.Contains(s, "Spellthread") {
+			if idx := strings.Index(s, " ("); idx > 0 {
+				s = s[:idx]
+			}
+			return strings.TrimSpace(s)
+		}
+		return ""
+	}
+
+	normaliseSlot := func(raw string) string {
+		raw = strings.TrimSpace(raw)
+		switch strings.ToLower(raw) {
+		case "head":
+			return "Helm"
+		case "shoulder":
+			return "Shoulders"
+		case "ring":
+			return "Rings"
+		case "feet":
+			return "Boots"
+		case "off hand":
+			return "Off Hand"
+		}
+		return raw
+	}
+
+	seen := map[string]bool{}
+	addEnchant := func(slot, enchant string) {
+		slot = normaliseSlot(slot)
+		key := slot + "|" + enchant
+		if !seen[key] && enchant != "" {
+			seen[key] = true
+			enchants = append(enchants, EnchantEntry{Slot: slot, Enchant: enchant})
+		}
+	}
+
+	lines := strings.Split(section, "\n")
+	for i, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		// Format 1: tab-separated "Slot\tEnchant Name"
+		if strings.Contains(line, "\t") {
+			parts := strings.SplitN(line, "\t", 2)
+			if len(parts) == 2 {
+				slot := strings.TrimSpace(parts[0])
+				enchantRaw := strings.TrimSpace(parts[1])
+				isSlot := false
+				for _, s := range slotNames {
+					if strings.EqualFold(slot, s) {
+						isSlot = true
+						break
+					}
+				}
+				if isSlot {
+					if enc := extractEnchant(enchantRaw); enc != "" {
+						addEnchant(slot, enc)
+					}
+				}
+			}
+			continue
+		}
+
+		// Format 2: slot name alone on a line, enchant on next line(s)
+		for _, slot := range slotNames {
+			if !strings.EqualFold(line, slot) {
+				continue
+			}
+			for j := i + 1; j < len(lines) && j < i+8; j++ {
+				next := strings.TrimSpace(lines[j])
+				if next == "" {
+					continue
+				}
+				isNextSlot := false
+				for _, s2 := range slotNames {
+					if strings.EqualFold(next, s2) {
+						isNextSlot = true
+						break
+					}
+				}
+				if isNextSlot {
+					break
+				}
+				if enc := extractEnchant(next); enc != "" {
+					addEnchant(slot, enc)
+					break
+				}
+			}
+			break
+		}
+	}
+	return enchants
+}
+
+// ── Consumables parser ───────────────────────────────────────────────────────
+
+// knownConsumables is the source of truth for all relevant Midnight S1 consumable
+// item names, grouped by category. Parsing simply scans the guide text for the
+// first occurrence of any known item in each category.
+var knownConsumables = map[string][]string{
+	"flask": {
+		"Flask of the Magisters",
+		"Flask of the Shattered Sun",
+		"Flask of the Blood Knights",
+		"Flask of Crystallized Speed",
+		"Flask of Tempered Swiftness",
+		"Flask of Tempered Versatility",
+		"Flask of Tempered Aggression",
+		"Flask of Tempered Mastery",
+	},
+	"potion": {
+		"Light's Potential",
+		"Potion of Recklessness",
+		"Draught of Rampant Abandon",
+		"Potion of Shocking Disclosure",
+		"Tempered Potion",
+		"Algari Healing Potion",
+		"Silvermoon Health Potion",
+	},
+	"food": {
+		"Silvermoon Parade",
+		"Harandar Celebration",
+		"Blooming Feast",
+		"Quel'dorei Medley",
+		"Royal Roast",
+		"Impossibly Royal Roast",
+		"Champion's Bento",
+		"Ren'dorei Banquet",
+		"Sinner's Stew",
+	},
+	"weaponOil": {
+		"Thalassian Phoenix Oil",
+		"Algari Mana Oil",
+		"Mercurial Whetstone",
+		"Ironclaw Whetstone",
+		"Crystalline Radiance",
+	},
+	"augRune": {
+		"Void-Touched Augment Rune",
+	},
+}
+
+func parseConsumables(text string) ConsumableSet {
+	cs := ConsumableSet{}
+
+	// Isolate the consumables block to avoid false positives from other sections
+	consumBlock := extractSectionByHeading(text,
+		[]string{"Consumable Recommendations", "Extra Consumable"},
+		[]string{"Changelog"},
+	)
+	if consumBlock == "" {
+		consumBlock = text
+	}
+
+	// Normalise double spaces (stripped icon characters before item names)
+	consumBlock = regexp.MustCompile(`\s{2,}`).ReplaceAllString(consumBlock, " ")
+
+	cs.Flask     = findFirstKnown(consumBlock, knownConsumables["flask"])
+	cs.Potion    = findFirstKnown(consumBlock, knownConsumables["potion"])
+	cs.Food      = findFirstKnown(consumBlock, knownConsumables["food"])
+	cs.WeaponOil = findFirstKnown(consumBlock, knownConsumables["weaponOil"])
+	cs.AugRune   = findFirstKnown(consumBlock, knownConsumables["augRune"])
+
+	// WeaponOil fallback: some specs embed the oil in the weapon enchant line
+	// e.g. "Enchant Weapon - Jan'alai's Precision and Thalassian Phoenix Oil"
+	// which falls outside the consumable block — scan full text
+	if cs.WeaponOil == "" {
+		fullNorm := regexp.MustCompile(`\s{2,}`).ReplaceAllString(text, " ")
+		cs.WeaponOil = findFirstKnown(fullNorm, knownConsumables["weaponOil"])
+	}
+
+	return cs
+}
+
+// findFirstKnown scans text for the first occurrence of any item in the candidates
+// list and returns the canonical name (from the list, not from the text).
+func findFirstKnown(text string, candidates []string) string {
+	lowerText := strings.ToLower(text)
+	bestIdx := -1
+	bestName := ""
+	for _, name := range candidates {
+		idx := strings.Index(lowerText, strings.ToLower(name))
+		if idx >= 0 && (bestIdx < 0 || idx < bestIdx) {
+			bestIdx = idx
+			bestName = name
+		}
+	}
+	return bestName
+}
+// incidental occurrences of keywords mid-sentence.
+func extractSectionByHeading(text string, startMarkers, endMarkers []string) string {
+	lines := strings.Split(text, "\n")
+
+	startLine := -1
+	for i, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		for _, marker := range startMarkers {
+			if strings.EqualFold(line, marker) ||
+				strings.HasPrefix(strings.ToLower(line), strings.ToLower(marker)) {
+				startLine = i + 1
+				break
+			}
+		}
+		if startLine >= 0 {
+			break
+		}
+	}
+	if startLine < 0 {
+		return ""
+	}
+
+	endLine := len(lines)
+	for i := startLine; i < len(lines); i++ {
+		line := strings.TrimSpace(lines[i])
+		if line == "" {
+			continue
+		}
+		for _, marker := range endMarkers {
+			if strings.EqualFold(line, marker) ||
+				strings.HasPrefix(strings.ToLower(line), strings.ToLower(marker)) {
+				endLine = i
+				break
+			}
+		}
+		if endLine < len(lines) {
+			break
+		}
+	}
+
+	section := strings.TrimSpace(strings.Join(lines[startLine:endLine], "\n"))
+	if len(section) > 3000 {
+		section = section[:3000]
+	}
+	return section
+}
+
+
+// ── generate-guide command ───────────────────────────────────────────────────
+
+func generateGuide() error {
+	files, err := filepath.Glob("data/guide_*.json")
+	if err != nil || len(files) == 0 {
+		return fmt.Errorf("no guide JSON files found — run 'go run . scrape-guide' first")
+	}
+
+	sort.Strings(files)
+
+	var specs []GuideData
+	for _, f := range files {
+		var g GuideData
+		raw, err := os.ReadFile(f)
+		if err != nil {
+			return fmt.Errorf("error reading %s: %w", f, err)
+		}
+		if err := json.Unmarshal(raw, &g); err != nil {
+			return fmt.Errorf("error parsing %s: %w", f, err)
+		}
+		specs = append(specs, g)
+		fmt.Printf("  Loaded: %s %s\n", g.Class, g.Spec)
+	}
+
+	tmpl, err := template.ParseFiles("templates/GearPath_Stats.lua.tmpl")
+	if err != nil {
+		return fmt.Errorf("could not load template: %w", err)
+	}
+
+	outputPath := filepath.Join("..", "Data", "GearPath_Stats.lua")
+	outFile, err := os.Create(outputPath)
+	if err != nil {
+		return fmt.Errorf("could not create output file: %w", err)
+	}
+	defer outFile.Close()
+
+	if err := tmpl.Execute(outFile, GuideTemplateData{
+		Generated: time.Now().Format("2006-01-02 15:04:05"),
+		Specs:     specs,
+	}); err != nil {
+		return fmt.Errorf("template error: %w", err)
+	}
+
+	fmt.Printf("\nGenerated: %s (%d specs)\n", outputPath, len(specs))
 	return nil
 }

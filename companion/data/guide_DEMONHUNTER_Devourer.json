@@ -1,0 +1,64 @@
+{
+  "Class": "DEMONHUNTER",
+  "Spec": "Devourer",
+  "Updated": "2026-04-17",
+  "Stats": {
+    "Format": "ordered",
+    "Ordered": [
+      "Intellect",
+      "Haste",
+      "Mastery",
+      "Critical Strike",
+      "Versatility"
+    ],
+    "Percentage": null,
+    "Note": ""
+  },
+  "Gems": [
+    {
+      "Name": "Indecipherable Eversong Diamond",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Quick Amethyst",
+      "Note": ""
+    }
+  ],
+  "Enchants": [
+    {
+      "Slot": "Off Hand",
+      "Enchant": "Enchant Weapon - Berserker's Rage"
+    },
+    {
+      "Slot": "Helm",
+      "Enchant": "Enchant Helm - Empowered Rune of Avoidance"
+    },
+    {
+      "Slot": "Chest",
+      "Enchant": "Enchant Chest - Mark of the Worldsoul"
+    },
+    {
+      "Slot": "Shoulders",
+      "Enchant": "Enchant Shoulders - Amirdrassil's Grace"
+    },
+    {
+      "Slot": "Legs",
+      "Enchant": "Sunfire Silk Spellthread"
+    },
+    {
+      "Slot": "Boots",
+      "Enchant": "Enchant Boots - Lynx's Dexterity"
+    },
+    {
+      "Slot": "Rings",
+      "Enchant": "Enchant Ring - Zul'jin's Mastery OR"
+    }
+  ],
+  "Consumables": {
+    "Flask": "Flask of the Magisters",
+    "Food": "Silvermoon Parade",
+    "Potion": "Potion of Recklessness",
+    "WeaponOil": "Thalassian Phoenix Oil",
+    "AugRune": "Void-Touched Augment Rune"
+  }
+}

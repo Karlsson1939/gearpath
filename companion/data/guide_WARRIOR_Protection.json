@@ -1,0 +1,67 @@
+{
+  "Class": "WARRIOR",
+  "Spec": "Protection",
+  "Updated": "2026-04-17",
+  "Stats": {
+    "Format": "ordered",
+    "Ordered": [
+      "Item level",
+      "Haste",
+      "Critical Strike = Versatility",
+      "Mastery"
+    ],
+    "Percentage": null,
+    "Note": ""
+  },
+  "Gems": [
+    {
+      "Name": "Indecipherable Eversong Diamond",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Deadly Peridot",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Versatile Peridot",
+      "Note": ""
+    }
+  ],
+  "Enchants": [
+    {
+      "Slot": "Rings",
+      "Enchant": "Enchant Ring - Silvermoon's Alacrity"
+    },
+    {
+      "Slot": "Weapon",
+      "Enchant": "Enchant Weapon - Acuity of the Ren'dorei"
+    },
+    {
+      "Slot": "Helmet",
+      "Enchant": "Enchant Helm - Empowered Hex of Leeching"
+    },
+    {
+      "Slot": "Shoulders",
+      "Enchant": "Enchant Shoulders - Silvermoon's Mending"
+    },
+    {
+      "Slot": "Chest",
+      "Enchant": "Enchant Chest - Mark of the Worldsoul"
+    },
+    {
+      "Slot": "Legs",
+      "Enchant": "Blood Knight's Armor Kit"
+    },
+    {
+      "Slot": "Boots",
+      "Enchant": "Enchant Boots - Shaladrassil's Roots"
+    }
+  ],
+  "Consumables": {
+    "Flask": "Flask of the Shattered Sun",
+    "Food": "Harandar Celebration",
+    "Potion": "Light's Potential",
+    "WeaponOil": "Thalassian Phoenix Oil",
+    "AugRune": "Void-Touched Augment Rune"
+  }
+}

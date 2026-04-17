@@ -1,0 +1,92 @@
+{
+  "Class": "WARLOCK",
+  "Spec": "Destruction",
+  "Updated": "2026-04-17",
+  "Stats": {
+    "Format": "ordered",
+    "Ordered": [
+      "Intellect",
+      "Critical Strike",
+      "Haste",
+      "Mastery",
+      "Versatility"
+    ],
+    "Percentage": null,
+    "Note": ""
+  },
+  "Gems": [
+    {
+      "Name": "Indecipherable Eversong Diamond",
+      "Note": ""
+    },
+    {
+      "Name": "Powerful Eversong Diamond",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Deadly Amethyst",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Quick Amethyst",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Deadly Lapis",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Masterful Lapis",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Deadly Peridot",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Versatile Peridot",
+      "Note": ""
+    },
+    {
+      "Name": "The Dazzling Diamond Epic",
+      "Note": ""
+    }
+  ],
+  "Enchants": [
+    {
+      "Slot": "Helm",
+      "Enchant": "Enchant Helm - Empowered Blessing of Speed"
+    },
+    {
+      "Slot": "Shoulders",
+      "Enchant": "Enchant Shoulders - Akil'zon's Swiftness"
+    },
+    {
+      "Slot": "Chest",
+      "Enchant": "Enchant Chest - Mark of the Worldsoul"
+    },
+    {
+      "Slot": "Legs",
+      "Enchant": "Sunfire Silk Spellthread"
+    },
+    {
+      "Slot": "Boots",
+      "Enchant": "Enchant Boots - Farstrider's Hunt"
+    },
+    {
+      "Slot": "Rings",
+      "Enchant": "Enchant Ring - Eyes of the Eagle"
+    },
+    {
+      "Slot": "Weapon",
+      "Enchant": "Enchant Weapon - Acuity of the Ren'dorei"
+    }
+  ],
+  "Consumables": {
+    "Flask": "Flask of the Magisters",
+    "Food": "Blooming Feast",
+    "Potion": "Draught of Rampant Abandon",
+    "WeaponOil": "Thalassian Phoenix Oil",
+    "AugRune": "Void-Touched Augment Rune"
+  }
+}

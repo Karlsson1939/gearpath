@@ -1,0 +1,58 @@
+{
+  "Class": "DEATHKNIGHT",
+  "Spec": "Blood",
+  "Updated": "2026-04-17",
+  "Stats": {
+    "Format": "ordered",
+    "Ordered": null,
+    "Percentage": null,
+    "Note": "Critical Strike increases your chance for your abilities to deal 100% more damage, and all of your Critical Strike chance is converted into parry chance"
+  },
+  "Gems": [
+    {
+      "Name": "Indecipherable Eversong Diamond",
+      "Note": ""
+    },
+    {
+      "Name": "Powerful Eversong Diamond",
+      "Note": ""
+    },
+    {
+      "Name": "Thalassian Diamond",
+      "Note": ""
+    }
+  ],
+  "Enchants": [
+    {
+      "Slot": "Helm",
+      "Enchant": "Enchant Helm - Empowered Blessing of Speed"
+    },
+    {
+      "Slot": "Shoulders",
+      "Enchant": "Enchant Shoulders - Akil'zon's Swiftness"
+    },
+    {
+      "Slot": "Chest",
+      "Enchant": "Enchant Chest - Mark of the Worldsoul"
+    },
+    {
+      "Slot": "Legs",
+      "Enchant": "Blood Knight's Armor Kit"
+    },
+    {
+      "Slot": "Boots",
+      "Enchant": "Enchant Boots - Farstrider's Hunt"
+    },
+    {
+      "Slot": "Rings",
+      "Enchant": "Enchant Ring - Silvermoon's Tenacity"
+    }
+  ],
+  "Consumables": {
+    "Flask": "Flask of the Shattered Sun",
+    "Food": "Harandar Celebration",
+    "Potion": "Potion of Recklessness",
+    "WeaponOil": "Thalassian Phoenix Oil",
+    "AugRune": "Void-Touched Augment Rune"
+  }
+}
