@@ -46,10 +46,15 @@ function Detection:Detect(callback)
         return
     end
 
-    GearPath:Print(string.format("[Detection] Detected: %s %s", specName, classDisplayNames[classFile] or classFile))
+    -- Normalize spec name to match BiSData keys (API returns e.g. "Beast Mastery",
+    -- our keys use "BeastMastery" — strip all spaces)
+    local normalizedSpec = specName:gsub("%s+", "")
+
+    GearPath:Print(string.format("[Detection] Detected: %s %s (key: %s)",
+        specName, classDisplayNames[classFile] or classFile, normalizedSpec))
 
     if callback then
-        callback(classFile, specName)
+        callback(classFile, normalizedSpec)
     end
 end
 

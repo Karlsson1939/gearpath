@@ -61,11 +61,8 @@ end
 
 function GearScanner:GetIlvlFromLink(itemLink)
     if not itemLink then return 0 end
-    -- Item links encode the effective ilvl in the 9th field of the item string
-    -- Format: item:itemID:enchant:gem1:gem2:gem3:gem4:suffixID:uniqueID:linkLevel:specializationID:upgradeTypeID:instanceDifficultyID:numBonusIDs:bonusID1:...:upgradeValue
     local _, _, _, _, _, _, _, _, _, _, _, _, _, ilvl = GetItemInfo(itemLink)
     if ilvl and ilvl > 0 then return ilvl end
-    -- Fallback: parse ilvl from the link string directly
     local linkIlvl = tonumber(itemLink:match("item:%d+:%d+:%d+:%d+:%d+:%d+:%d+:%d+:(%d+)"))
     return linkIlvl or 0
 end
@@ -77,14 +74,23 @@ function GearScanner:ScanEquipped()
         local ilvl     = 0
 
         if itemLink then
-            local _, _, itemRarity, itemLevel = GetItemInfo(itemLink)
-            -- GetItemInfo returns the effective ilvl as the 4th return value
-            ilvl = itemLevel or 0
+            -- GetItemInfo returns: name, link, rarity, level, minLevel, type, subtype,
+            -- stackCount, equipLoc, texture, vendorPrice, classID, subclassID, bindType,
+            -- expacID, setID, isCraftingReagent. Effective ilvl is field 4.
+            local _, _, _, itemLevel = GetItemInfo(itemLink)
+            if itemLevel and itemLevel > 0 then
+                ilvl = itemLevel
+            else
+                -- Item not in cache yet — kick off the async load.
+                -- GET_ITEM_INFO_RECEIVED will fire when it arrives, which triggers
+                -- a debounced RebuildPriority via Core.lua's OnItemInfoReceived.
+                GetItemInfo(itemLink)
+            end
         end
 
         self.equipped[slotID] = {
             slotName = slotName,
-            itemID   = itemID,
+            itemID   = itemID or 0,  -- default to 0, never nil, avoids comparison errors
             itemLink = itemLink,
             ilvl     = ilvl,
         }

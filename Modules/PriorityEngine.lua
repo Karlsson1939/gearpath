@@ -86,19 +86,26 @@ function PriorityEngine:GetSlotStatus(slotID, bisItem, scanner)
     local equipped = scanner.equipped[slotID]
     local bagged   = scanner.bagged
 
+    -- No BiS item defined for this slot (itemID = 0 means unresolved)
+    if not bisItem.itemID or bisItem.itemID == 0 then
+        return "MISSING"
+    end
+
     -- Exact BiS item equipped
     if equipped and equipped.itemID and equipped.itemID == bisItem.itemID then
         return "EQUIPPED"
     end
 
-    -- BiS item in bags
-    if bagged and bisItem.itemID and bisItem.itemID > 0 and bagged[bisItem.itemID] then
+    -- BiS item sitting in bags
+    if bagged and bagged[bisItem.itemID] then
         return "IN_BAGS"
     end
 
-    -- Different item but significantly higher ilvl — treat as effectively BiS
-    if equipped and equipped.itemID and equipped.ilvl and equipped.ilvl >= (bisItem.ilvl + 10) then
-        return "EQUIPPED"
+    -- Something else equipped here at higher ilvl — slot is an upgrade target,
+    -- not completely missing, but still worth tracking in the priority list
+    if equipped and equipped.itemID ~= 0 and
+       equipped.ilvl and equipped.ilvl > 0 and equipped.ilvl > bisItem.ilvl then
+        return "UPGRADEABLE"
     end
 
     return "MISSING"

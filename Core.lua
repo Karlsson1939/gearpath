@@ -50,6 +50,8 @@ function GearPath:OnEnable()
     self:RegisterEvent("PLAYER_EQUIPMENT_CHANGED", "OnEquipmentChanged")
     self:RegisterEvent("BAG_UPDATE", "OnBagUpdate")
     self:RegisterEvent("WEEKLY_REWARDS_UPDATE", "OnVaultUpdate")
+    -- Re-scan when item cache populates (fires after uncached GetItemInfo resolves)
+    self:RegisterEvent("GET_ITEM_INFO_RECEIVED", "OnItemInfoReceived")
 
     if GearPath.MinimapButton then
         GearPath.MinimapButton:Initialize()
@@ -96,6 +98,17 @@ function GearPath:OnVaultUpdate()
     if GearPath.VaultAdvisor then
         GearPath.VaultAdvisor:Refresh()
     end
+end
+
+local itemInfoPending = false
+function GearPath:OnItemInfoReceived()
+    -- Debounce: only rebuild once after a burst of item cache responses at login
+    if itemInfoPending then return end
+    itemInfoPending = true
+    C_Timer.After(0.5, function()
+        itemInfoPending = false
+        GearPath:RebuildPriority()
+    end)
 end
 
 -- ============================================================
