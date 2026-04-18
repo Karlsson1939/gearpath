@@ -1,0 +1,68 @@
+{
+  "Class": "SHAMAN",
+  "Spec": "Enhancement",
+  "Updated": "2026-04-18",
+  "Stats": {
+    "Format": "ordered",
+    "Ordered": [
+      "Agility",
+      "Haste",
+      "Mastery",
+      "Critical Strike",
+      "Versatility"
+    ],
+    "Percentage": null,
+    "Note": ""
+  },
+  "Gems": [
+    {
+      "Name": "Indecipherable Eversong Diamond",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Quick Amethyst",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Masterful Peridot",
+      "Note": ""
+    }
+  ],
+  "Enchants": [
+    {
+      "Slot": "Off Hand",
+      "Enchant": "Enchant Weapon - Acuity of the Ren'dorei"
+    },
+    {
+      "Slot": "Helm",
+      "Enchant": "Enchant Helm - Empowered Rune of Avoidance"
+    },
+    {
+      "Slot": "Shoulders",
+      "Enchant": "Enchant Shoulders - Amirdrassil's Grace"
+    },
+    {
+      "Slot": "Chest",
+      "Enchant": "Enchant Chest - Mark of the Worldsoul"
+    },
+    {
+      "Slot": "Legs",
+      "Enchant": "Forest Hunter's Armor Kit"
+    },
+    {
+      "Slot": "Boots",
+      "Enchant": "Enchant Boots - Lynx's Dexterity"
+    },
+    {
+      "Slot": "Rings",
+      "Enchant": "Enchant Ring - Zul'jin's Mastery"
+    }
+  ],
+  "Consumables": {
+    "Flask": "Flask of the Magisters",
+    "Food": "Silvermoon Parade",
+    "Potion": "Light's Potential",
+    "WeaponOil": "",
+    "AugRune": "Void-Touched Augment Rune"
+  }
+}

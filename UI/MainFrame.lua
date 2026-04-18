@@ -68,7 +68,7 @@ function MainFrame:Create()
 
     -- Tab buttons
     frame.tabs = {}
-    local tabLabels = { "Priority", "BiS List", "Vault" }
+    local tabLabels = { "Priority", "BiS List", "Stats", "Vault" }
     for i, label in ipairs(tabLabels) do
         local tab = CreateFrame("Button", "GearPathTab" .. i, frame)
         tab:SetSize(80, 24)
@@ -143,6 +143,7 @@ function MainFrame:ShowTab(tabIndex)
     -- Hide all tab content first
     if GearPath.PriorityTab then GearPath.PriorityTab:Hide() end
     if GearPath.BiSTab      then GearPath.BiSTab:Hide()      end
+    if GearPath.StatsTab    then GearPath.StatsTab:Hide()    end
     if GearPath.VaultTab    then GearPath.VaultTab:Hide()    end
 
     -- Show active tab
@@ -150,7 +151,9 @@ function MainFrame:ShowTab(tabIndex)
         GearPath.PriorityTab:Show(frame.content)
     elseif tabIndex == 2 and GearPath.BiSTab then
         GearPath.BiSTab:Show(frame.content)
-    elseif tabIndex == 3 and GearPath.VaultTab then
+    elseif tabIndex == 3 and GearPath.StatsTab then
+        GearPath.StatsTab:Show(frame.content)
+    elseif tabIndex == 4 and GearPath.VaultTab then
         GearPath.VaultTab:Show(frame.content)
     end
 end

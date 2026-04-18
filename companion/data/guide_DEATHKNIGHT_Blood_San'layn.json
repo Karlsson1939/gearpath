@@ -1,0 +1,72 @@
+{
+  "Class": "DEATHKNIGHT",
+  "Spec": "Blood",
+  "Updated": "2026-04-18",
+  "Stats": {
+    "Format": "ordered",
+    "Ordered": [
+      "Item Level",
+      "Haste",
+      "Critical Strike",
+      "Versatility",
+      "Mastery"
+    ],
+    "Percentage": null,
+    "Note": ""
+  },
+  "Gems": [
+    {
+      "Name": "Indecipherable Eversong Diamond",
+      "Note": ""
+    },
+    {
+      "Name": "Powerful Eversong Diamond",
+      "Note": ""
+    },
+    {
+      "Name": "Thalassian Diamond",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Quick Garnet",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Masterful Garnet",
+      "Note": ""
+    }
+  ],
+  "Enchants": [
+    {
+      "Slot": "Helm",
+      "Enchant": "Enchant Helm - Empowered Blessing of Speed"
+    },
+    {
+      "Slot": "Shoulders",
+      "Enchant": "Enchant Shoulders - Akil'zon's Swiftness"
+    },
+    {
+      "Slot": "Chest",
+      "Enchant": "Enchant Chest - Mark of the Worldsoul"
+    },
+    {
+      "Slot": "Legs",
+      "Enchant": "Blood Knight's Armor Kit"
+    },
+    {
+      "Slot": "Boots",
+      "Enchant": "Enchant Boots - Farstrider's Hunt"
+    },
+    {
+      "Slot": "Rings",
+      "Enchant": "Enchant Ring - Silvermoon's Tenacity"
+    }
+  ],
+  "Consumables": {
+    "Flask": "Flask of the Shattered Sun",
+    "Food": "Harandar Celebration",
+    "Potion": "Potion of Recklessness",
+    "WeaponOil": "Thalassian Phoenix Oil",
+    "AugRune": "Void-Touched Augment Rune"
+  }
+}

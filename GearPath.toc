@@ -2,7 +2,7 @@
 ## Title: GearPath
 ## Notes: Ranks content sources by how many BiS upgrades they contain for your spec.
 ## Author: Tony
-## Version: 0.2.6
+## Version: 0.3.0
 ## SavedVariables: GearPathDB
 ## SavedVariablesPerCharacter: GearPathCharDB
 
@@ -33,6 +33,7 @@ UI\MinimapButton.lua
 UI\MainFrame.lua
 UI\PriorityTab.lua
 UI\BiSTab.lua
+UI\StatsTab.lua
 UI\VaultTab.lua
 UI\Config.lua
 
@@ -40,3 +41,4 @@ UI\Config.lua
 Data\SlotWeights.lua
 Data\Dungeons.lua
 Data\GearPath_Data.lua
+Data\GearPath_Stats.lua

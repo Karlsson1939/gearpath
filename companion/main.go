@@ -202,6 +202,61 @@ var heroTalentSplits = map[string][]string{
 	"DEATHKNIGHT_Blood": {"San'layn", "Deathbringer"},
 }
 
+// heroGuideTab describes a hero-talent tab on an Icy Veins guide page.
+// StatSelector is a CSS selector for the tab button that, when clicked in
+// headless Chrome, makes that hero talent's stat content visible.
+type heroGuideTab struct {
+	Key          string // normalized key matching Detection.lua's normalizeKey
+	DisplayName  string // human-readable name for post-click validation
+	StatSelector string // CSS selector to click on the stat priority page
+}
+
+// heroGuideSpec groups the hero talent tabs for a spec, plus an optional
+// fallback selector for a "General" stat priority section. When set, the
+// scraper clicks FallbackSelector first and stores the result as an _any
+// entry — used by users without an active hero talent selection.
+type heroGuideSpec struct {
+	Tabs             []heroGuideTab
+	FallbackSelector string // if non-empty, click this and store as _any
+}
+
+// heroGuideSplits declares specs where Icy Veins publishes per-hero-talent
+// stat priorities behind a tab UI. For these specs, the scraper clicks each
+// tab and parses stats independently, producing one guide JSON per hero talent.
+//
+// Consumables for all specs (including these) are parsed once from the full
+// page text and duplicated to each hero key. Per-hero consumable parsing is
+// deferred to v0.3.1+ — consumable differences for Blood DK (Deathbringer vs
+// San'layn) and Enhancement Shaman (Stormbringer vs Totemic) are inline prose,
+// not tabbed sections, making structured extraction fragile.
+var heroGuideSplits = map[string]heroGuideSpec{
+	"DEATHKNIGHT_Blood": {
+		Tabs: []heroGuideTab{
+			{Key: "Deathbringer", DisplayName: "Deathbringer", StatSelector: "#area_1_button"},
+			{Key: "San'layn", DisplayName: "San'layn", StatSelector: "#area_2_button"},
+		},
+	},
+	"PALADIN_Holy": {
+		FallbackSelector: "#area_1_button", // "General Stat Priority" — _any fallback
+		Tabs: []heroGuideTab{
+			{Key: "HeraldoftheSun", DisplayName: "Herald of the Sun", StatSelector: "#area_2_button"},
+			{Key: "Lightsmith", DisplayName: "Lightsmith", StatSelector: "#area_3_button"},
+		},
+	},
+	"PRIEST_Shadow": {
+		Tabs: []heroGuideTab{
+			{Key: "Archon", DisplayName: "Archon", StatSelector: "#rotation_switch_archon"},
+			{Key: "Voidweaver", DisplayName: "Voidweaver", StatSelector: "#rotation_switch_voidweaver"},
+		},
+	},
+	"SHAMAN_Enhancement": {
+		Tabs: []heroGuideTab{
+			{Key: "Stormbringer", DisplayName: "Stormbringer", StatSelector: "#area_1_button"},
+			{Key: "Totemic", DisplayName: "Totemic", StatSelector: "#area_2_button"},
+		},
+	},
+}
+
 // ============================================================
 // Icy Veins slot parsing maps
 // ============================================================
@@ -2621,9 +2676,24 @@ type ConsumableSet struct {
 	AugRune   string
 }
 
+type GuideEntry struct {
+	HeroKey     string
+	Updated     string
+	Stats       StatPriority
+	Gems        []GemEntry
+	Enchants    []EnchantEntry
+	Consumables ConsumableSet
+}
+
+type GuideGroup struct {
+	Class   string
+	Spec    string
+	Entries []GuideEntry
+}
+
 type GuideTemplateData struct {
 	Generated string
-	Specs     []GuideData
+	Groups    []GuideGroup
 }
 
 const (
@@ -2671,22 +2741,46 @@ func scrapeGuideAll(target string) error {
 
 		fmt.Printf("Scraping guide %-14s %-14s ... ", s.Class, s.Spec)
 
-		guide, err := scrapeGuideSpec(browserCtx, slug, s.Class, s.Spec, today)
-		if err != nil {
-			fmt.Printf("FAILED (%v)\n", err)
-			failed++
-			continue
+		heroSpec, isHeroSplit := heroGuideSplits[key]
+		if isHeroSplit {
+			guides, err := scrapeGuideSpecHero(browserCtx, slug, s.Class, s.Spec, today, heroSpec)
+			if err != nil {
+				fmt.Printf("FAILED (%v)\n", err)
+				failed++
+				continue
+			}
+			writeErr := false
+			for heroKey, guide := range guides {
+				filename := fmt.Sprintf("data/guide_%s_%s_%s.json", s.Class, s.Spec, heroKey)
+				data, _ := json.MarshalIndent(guide, "", "  ")
+				if err := os.WriteFile(filename, data, 0644); err != nil {
+					fmt.Printf("FAILED (write %s: %v)\n", heroKey, err)
+					writeErr = true
+					break
+				}
+			}
+			if writeErr {
+				failed++
+				continue
+			}
+			fmt.Printf("OK (%d hero keys)\n", len(guides))
+		} else {
+			guide, err := scrapeGuideSpec(browserCtx, slug, s.Class, s.Spec, today)
+			if err != nil {
+				fmt.Printf("FAILED (%v)\n", err)
+				failed++
+				continue
+			}
+			filename := fmt.Sprintf("data/guide_%s_%s_any.json", s.Class, s.Spec)
+			data, _ := json.MarshalIndent(guide, "", "  ")
+			if err := os.WriteFile(filename, data, 0644); err != nil {
+				fmt.Printf("FAILED (write: %v)\n", err)
+				failed++
+				continue
+			}
+			fmt.Printf("OK\n")
 		}
 
-		filename := fmt.Sprintf("data/guide_%s_%s.json", s.Class, s.Spec)
-		data, _ := json.MarshalIndent(guide, "", "  ")
-		if err := os.WriteFile(filename, data, 0644); err != nil {
-			fmt.Printf("FAILED (write: %v)\n", err)
-			failed++
-			continue
-		}
-
-		fmt.Printf("OK\n")
 		success++
 		time.Sleep(1200 * time.Millisecond)
 	}
@@ -2739,7 +2833,386 @@ func scrapeGuideSpec(browserCtx context.Context, slug, class, spec, today string
 	guide.Enchants = parseEnchants(consumText)
 	guide.Consumables = parseConsumables(consumText)
 
+	warnGuideGaps(consumText, guide, class, spec)
+
 	return guide, nil
+}
+
+// scrapeGuideSpecHero scrapes guide data for a spec with per-hero-talent stat
+// tabs. It navigates to the stat page once, then clicks each hero talent tab
+// and reads the stat content independently. Consumables are parsed once from
+// the full page text and duplicated to each hero key (per-hero consumable
+// parsing deferred to v0.3.1+).
+//
+// Returns a map of heroKey → *GuideData. If FallbackSelector is set, also
+// includes an "any" entry from the General stat priority tab.
+func scrapeGuideSpecHero(browserCtx context.Context, slug, class, spec, today string, heroSpec heroGuideSpec) (map[string]*GuideData, error) {
+	// --- Stat page: click each hero talent tab and parse independently ---
+	statURL := fmt.Sprintf("https://www.icy-veins.com/wow/%s%s", slug, statSuffix)
+	pageCtx, pageCancel := context.WithTimeout(browserCtx, 60*time.Second)
+	defer pageCancel()
+
+	err := chromedp.Run(pageCtx,
+		chromedp.Navigate(statURL),
+		chromedp.WaitVisible(".page_content", chromedp.ByQuery),
+		chromedp.Sleep(400*time.Millisecond),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("stat page navigate: %w", err)
+	}
+
+	heroStats := make(map[string]StatPriority)
+
+	// clickTab uses JavaScript click() instead of chromedp.Click because
+	// Icy Veins' tab buttons are <span> elements whose event listeners don't
+	// respond to chromedp's synthetic mouse events.
+	clickTab := func(selector string) error {
+		var ok bool
+		err := chromedp.Run(pageCtx,
+			chromedp.Evaluate(fmt.Sprintf(`(function(){ var el = document.querySelector('%s'); if(!el) return false; el.click(); return true; })()`, selector), &ok),
+			chromedp.Sleep(500*time.Millisecond),
+		)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return fmt.Errorf("selector %q not found in DOM", selector)
+		}
+		return nil
+	}
+
+	readPageText := func() (string, error) {
+		var text string
+		err := chromedp.Run(pageCtx,
+			chromedp.Evaluate(`document.querySelector('.page_content').innerText`, &text),
+		)
+		return text, err
+	}
+
+	// Optional fallback: click the "General" tab and store as _any.
+	if heroSpec.FallbackSelector != "" {
+		if err := clickTab(heroSpec.FallbackSelector); err != nil {
+			fmt.Printf("WARN [%s_%s] fallback stat tab click failed (%s): %v\n", class, spec, heroSpec.FallbackSelector, err)
+		} else if fallbackText, err := readPageText(); err == nil {
+			heroStats["any"] = parseStatPriority(fallbackText)
+		}
+	}
+
+	// Per-hero-talent tabs.
+	for _, tab := range heroSpec.Tabs {
+		if err := clickTab(tab.StatSelector); err != nil {
+			fmt.Printf("WARN [%s_%s] stat tab click failed for %s (%s): %v\n", class, spec, tab.Key, tab.StatSelector, err)
+			continue
+		}
+
+		statText, err := readPageText()
+		if err != nil {
+			fmt.Printf("WARN [%s_%s] stat text read failed for %s: %v\n", class, spec, tab.Key, err)
+			continue
+		}
+
+		heroStats[tab.Key] = parseStatPriority(statText)
+	}
+
+	if len(heroStats) == 0 {
+		return nil, fmt.Errorf("no hero talent stat tabs succeeded")
+	}
+
+	// --- Consumable page: single read, shared across hero talents ---
+	consumURL := fmt.Sprintf("https://www.icy-veins.com/wow/%s%s", slug, gearSuffix)
+	var consumText string
+	pageCtx2, pageCancel2 := context.WithTimeout(browserCtx, 30*time.Second)
+	err = chromedp.Run(pageCtx2,
+		chromedp.Navigate(consumURL),
+		chromedp.WaitVisible(".page_content", chromedp.ByQuery),
+		chromedp.Sleep(400*time.Millisecond),
+		chromedp.Evaluate(`document.querySelector('.page_content').innerText`, &consumText),
+	)
+	pageCancel2()
+	if err != nil {
+		return nil, fmt.Errorf("consumables page: %w", err)
+	}
+
+	sharedGems := parseGems(consumText)
+	sharedEnchants := parseEnchants(consumText)
+	sharedConsumables := parseConsumables(consumText)
+
+	// --- Assemble one GuideData per hero key ---
+	results := make(map[string]*GuideData)
+	for key, stats := range heroStats {
+		results[key] = &GuideData{
+			Class:       class,
+			Spec:        spec,
+			Updated:     today,
+			Stats:       stats,
+			Gems:        sharedGems,
+			Enchants:    sharedEnchants,
+			Consumables: sharedConsumables,
+		}
+	}
+
+	// warnGuideGaps once per spec (consumables are shared, not per-hero).
+	// Use the first hero talent's guide for the check.
+	for _, guide := range results {
+		warnGuideGaps(consumText, guide, class, spec)
+		break
+	}
+
+	return results, nil
+}
+
+// normalizeStatLine checks whether a single line from a stat priority page
+// contains one or more known stat names. It returns the canonical stat names
+// found, or nil if the line doesn't parse as stats.
+//
+// Design principle: Icy Veins expresses "approximately equal" stats in many
+// formats — "A = B", "A >= B", "A ≅ B", "A and B", "A, B or C". These are
+// all equality indicators. We normalize them to a single separator before
+// matching against knownStats, rather than handling each variant individually.
+func normalizeStatLine(line string, knownStats []string) []string {
+	if len(line) == 0 || len(line) > 80 {
+		return nil
+	}
+
+	// Fast path: exact match for a single known stat.
+	for _, stat := range knownStats {
+		if strings.EqualFold(line, stat) {
+			return []string{stat}
+		}
+	}
+
+	// Normalize all equality indicators to "=".
+	normalized := line
+	for _, eq := range []string{"≅", "≈", "≃", "~="} {
+		normalized = strings.ReplaceAll(normalized, eq, "=")
+	}
+	normalized = strings.ReplaceAll(normalized, ">=", "=")
+	normalized = strings.ReplaceAll(normalized, "<=", "=")
+
+	// Split by = and ,
+	parts := regexp.MustCompile(`[=,]`).Split(normalized, -1)
+
+	// Further split each part by word-boundary "and" / "or".
+	var tokens []string
+	wordSep := regexp.MustCompile(`(?i)\band\b|\bor\b`)
+	for _, p := range parts {
+		for _, s := range wordSep.Split(p, -1) {
+			// Strip parenthetical suffixes like "(25% - 33%)".
+			if idx := strings.Index(s, "("); idx > 0 {
+				s = s[:idx]
+			}
+			s = strings.TrimSpace(s)
+			if s != "" {
+				tokens = append(tokens, s)
+			}
+		}
+	}
+
+	if len(tokens) == 0 {
+		return nil
+	}
+
+	// Every token must be a known stat; use the canonical name from knownStats.
+	var matched []string
+	for _, token := range tokens {
+		found := false
+		for _, stat := range knownStats {
+			if strings.EqualFold(token, stat) {
+				matched = append(matched, stat)
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil
+		}
+	}
+	return matched
+}
+
+// Convention-based regexes for warnGuideGaps. These detect item names by
+// naming pattern (title-cased words + category suffix) rather than by
+// allowlist, so they can catch items missing from the allowlist.
+//
+// Known limitations:
+//   - Food has no extractable naming convention (names are proper nouns).
+//   - Weapon buffs like "Crystalline Radiance" don't end in Oil/Whetstone.
+//   Both categories rely on allowlist-only detection for those outliers.
+var (
+	warnHeadPotionRe = regexp.MustCompile(`(?i)\bpotion`)
+	warnHeadFoodRe   = regexp.MustCompile(`(?i)\bfood`)
+	warnFlaskRe      = regexp.MustCompile(`Flask of (?:the |)(?:[A-Z][a-z'-]+ ){0,3}[A-Z][a-z'-]+`)
+	warnPotionRe     = regexp.MustCompile(`(?:Potion|Draught) of (?:the |)(?:[A-Z][a-z'-]+ ){0,3}[A-Z][a-z'-]+`)
+	warnOilRe        = regexp.MustCompile(`(?:[A-Z][a-z'-]+ )+(?:Oil|Whetstone)`)
+	warnRuneRe       = regexp.MustCompile(`[A-Z][\w'-]+ Augment Rune`)
+	warnGemRe          = regexp.MustCompile(`(?:Flawless|Perfect) \w+ (?:Diamond|Amethyst|Garnet|Peridot|Lapis|Ruby|Sapphire)|\w+ Eversong Diamond`)
+	warnEnchantItemRe  = regexp.MustCompile(`Enchant (?:Helm|Chest|Shoulders|Ring|Boots|Weapon|Cloak|Bracers) - `)
+)
+
+// warnGuideGaps logs warnings when parsed guide data has empty fields that
+// appear to be gaps (page covers the topic but no item matched) rather than
+// legitimate absences (page doesn't cover the topic).
+//
+// Per consumable category, detection is two-tier:
+//  1. Sub-heading found + known allowlist item in span but field empty →
+//     parsing/extraction bug.
+//  2. Sub-heading found + convention regex matches an item NOT in the allowlist →
+//     allowlist is stale.
+//  3. Sub-heading found but neither known items nor convention matches in span →
+//     legitimate absence (heading explains why the category doesn't apply).
+//
+// For gems and enchants, warnings fire when parsing returned empty but the
+// page text contains convention-based patterns indicating content was present.
+//
+// Known limitations:
+//   - Specs with inline-only consumables (no sub-headings, e.g., Resto Druid)
+//     won't trigger warnings. Deferred to Step 5 (pattern extraction).
+//   - Food has no convention regex; only allowlist detection (tier 1) applies.
+//   - Weapon buffs not ending in Oil/Whetstone are invisible to tier 2.
+func warnGuideGaps(consumText string, guide *GuideData, class, spec string) {
+	tag := class + "_" + spec
+
+	// --- Consumable category checks ---
+	type consumCheck struct {
+		name   string
+		value  string
+		isHead func(string) bool
+		known  []string
+		itemRe *regexp.Regexp // convention regex; nil = no pattern (food)
+	}
+
+	checks := []consumCheck{
+		{
+			name: "flask", value: guide.Consumables.Flask,
+			isHead: func(low string) bool {
+				return strings.HasPrefix(low, "flask") || strings.HasPrefix(low, "best flask")
+			},
+			known: knownConsumables["flask"], itemRe: warnFlaskRe,
+		},
+		{
+			name: "potion", value: guide.Consumables.Potion,
+			isHead: func(low string) bool { return warnHeadPotionRe.MatchString(low) },
+			known:  knownConsumables["potion"], itemRe: warnPotionRe,
+		},
+		{
+			name: "food", value: guide.Consumables.Food,
+			isHead: func(low string) bool { return warnHeadFoodRe.MatchString(low) },
+			known:  knownConsumables["food"], itemRe: nil,
+		},
+		{
+			name: "weaponOil", value: guide.Consumables.WeaponOil,
+			isHead: func(low string) bool {
+				return strings.HasPrefix(low, "weapon buff") ||
+					strings.HasPrefix(low, "weapon enhancement") ||
+					strings.HasPrefix(low, "weapon oil")
+			},
+			known: knownConsumables["weaponOil"], itemRe: warnOilRe,
+		},
+		{
+			name: "augRune", value: guide.Consumables.AugRune,
+			isHead: func(low string) bool { return strings.HasPrefix(low, "augment") },
+			known:  knownConsumables["augRune"], itemRe: warnRuneRe,
+		},
+	}
+
+	// All heading matchers, for span-boundary detection.
+	allHeadMatchers := make([]func(string) bool, len(checks))
+	for i, c := range checks {
+		allHeadMatchers[i] = c.isHead
+	}
+	isAnyHead := func(low string) bool {
+		for _, fn := range allHeadMatchers {
+			if fn(low) {
+				return true
+			}
+		}
+		return false
+	}
+
+	lines := strings.Split(consumText, "\n")
+	for _, chk := range checks {
+		if chk.value != "" {
+			continue
+		}
+
+		// Find sub-heading line (short line matching this category).
+		headLine := -1
+		for i, line := range lines {
+			trimmed := strings.TrimSpace(line)
+			if len(trimmed) == 0 || len(trimmed) >= 60 {
+				continue
+			}
+			if chk.isHead(strings.ToLower(trimmed)) {
+				headLine = i
+				break
+			}
+		}
+		if headLine < 0 {
+			continue // no sub-heading — legitimate absence
+		}
+
+		// Extract span: sub-heading to next sub-heading, capped at 300 chars.
+		var spanBuilder strings.Builder
+		charCount := 0
+		for i := headLine + 1; i < len(lines) && charCount < 300; i++ {
+			trimmed := strings.TrimSpace(lines[i])
+			if trimmed != "" && len(trimmed) < 60 && i > headLine+1 {
+				if isAnyHead(strings.ToLower(trimmed)) {
+					break
+				}
+			}
+			spanBuilder.WriteString(lines[i])
+			spanBuilder.WriteString("\n")
+			charCount += len(lines[i]) + 1
+		}
+		span := spanBuilder.String()
+		spanLower := strings.ToLower(span)
+
+		// Tier 1: known item in span but field empty → parsing/extraction bug.
+		tier1 := false
+		for _, item := range chk.known {
+			if strings.Contains(spanLower, strings.ToLower(item)) {
+				fmt.Printf("WARN [%s] %s: known item %q found on page but missing from parsed output\n", tag, chk.name, item)
+				tier1 = true
+				break
+			}
+		}
+
+		// Tier 2: convention regex matches unknown item → allowlist stale.
+		if !tier1 && chk.itemRe != nil {
+			match := chk.itemRe.FindString(span)
+			if match != "" {
+				inKnown := false
+				for _, item := range chk.known {
+					if strings.EqualFold(item, match) {
+						inKnown = true
+						break
+					}
+				}
+				if !inKnown {
+					fmt.Printf("WARN [%s] %s: page mentions %q — not in known list\n", tag, chk.name, match)
+				}
+			}
+		}
+	}
+
+	// Gems: if parseGems returned nil, check whether the page has gem content
+	// that section extraction missed. Uses convention regex (not allowlist) to
+	// avoid circular detection.
+	if guide.Gems == nil {
+		if warnGemRe.MatchString(consumText) {
+			fmt.Printf("WARN [%s] gems: section heading not found but page contains gem-name patterns\n", tag)
+		}
+	}
+
+	// Enchants: if parseEnchants returned empty, check whether the page has
+	// enchant item names (not just the word "enchant" in prose). Pattern matches
+	// the WoW enchant naming convention: "Enchant {Slot} - {Name}".
+	if len(guide.Enchants) == 0 {
+		if warnEnchantItemRe.MatchString(consumText) {
+			fmt.Printf("WARN [%s] enchants: page contains enchant items but none were parsed\n", tag)
+		}
+	}
 }
 
 func parseStatPriority(text string) StatPriority {
@@ -2785,39 +3258,17 @@ func parseStatPriority(text string) StatPriority {
 		}
 	}
 
+	// Path 3: consecutive lines that are known stats, with equality
+	// normalization for formats like "A = B", "A >= B", "A ≅ B",
+	// "A and B", "A, B or C".
+	// TODO v0.3.1: preserve tied-stat semantic instead of flattening
+	// to adjacent entries in Ordered.
 	var consecutiveStats []string
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		isKnown := false
-		for _, stat := range knownStats {
-			if strings.EqualFold(line, stat) {
-				isKnown = true
-				break
-			}
-		}
-		if !isKnown && strings.ContainsAny(line, "=,") && len(line) < 50 {
-			parts := regexp.MustCompile(`[=,]`).Split(line, -1)
-			allStats := true
-			for _, p := range parts {
-				p = strings.TrimSpace(p)
-				found := false
-				for _, stat := range knownStats {
-					if strings.EqualFold(p, stat) {
-						found = true
-						break
-					}
-				}
-				if !found {
-					allStats = false
-					break
-				}
-			}
-			if allStats {
-				isKnown = true
-			}
-		}
-		if isKnown {
-			consecutiveStats = append(consecutiveStats, line)
+		stats := normalizeStatLine(line, knownStats)
+		if len(stats) > 0 {
+			consecutiveStats = append(consecutiveStats, stats...)
 		} else if len(consecutiveStats) >= 2 {
 			break
 		} else {
@@ -2872,6 +3323,8 @@ func extractStatNote(text string) string {
 var knownGems = []string{
 	"Indecipherable Eversong Diamond",
 	"Powerful Eversong Diamond",
+	"Stoic Eversong Diamond",
+	"Telluric Eversong Diamond",
 	"Thalassian Diamond",
 	"Flawless Deadly Amethyst",
 	"Flawless Quick Amethyst",
@@ -2885,13 +3338,14 @@ var knownGems = []string{
 	"Flawless Quick Peridot",
 	"Flawless Masterful Peridot",
 	"Flawless Versatile Peridot",
-	"The Dazzling Diamond Epic",
+	"Flawless Quick Garnet",
+	"Flawless Masterful Garnet",
 }
 
 func parseGems(text string) []GemEntry {
 	section := extractSectionByHeading(text,
-		[]string{"Recommended Gems", "Best Gems"},
-		[]string{"Enchants for", "Best Enchants for", "Best Enchants", "Changelog"},
+		[]string{"Recommended Gems", "Best Gems", "Gems for"},
+		[]string{"Enchants for", "Best Enchants for", "Best Enchants", "Enchants and", "Changelog"},
 	)
 	if section == "" {
 		return nil
@@ -2917,7 +3371,7 @@ func parseEnchants(text string) []EnchantEntry {
 
 	section := extractSectionByHeading(text,
 		[]string{"Enchants for", "Best Enchants for", "Best Enchants"},
-		[]string{"Consumable Recommendation", "Extra Consumable", "How to Choose", "Changelog"},
+		[]string{"Consumable Recommendation", "Extra Consumable", "Best Midnight Consumables", "Best Consumables", "Consumables for", "How to Choose", "Changelog"},
 	)
 	if section == "" {
 		return enchants
@@ -3041,6 +3495,7 @@ var knownConsumables = map[string][]string{
 		"Flask of the Magisters",
 		"Flask of the Shattered Sun",
 		"Flask of the Blood Knights",
+		"Flask of Thalassian Resistance",
 		"Flask of Crystallized Speed",
 		"Flask of Tempered Swiftness",
 		"Flask of Tempered Versatility",
@@ -3083,7 +3538,7 @@ func parseConsumables(text string) ConsumableSet {
 	cs := ConsumableSet{}
 
 	consumBlock := extractSectionByHeading(text,
-		[]string{"Consumable Recommendations", "Extra Consumable"},
+		[]string{"Consumable Recommendations", "Extra Consumable", "Best Midnight Consumables", "Best Consumables", "Consumables for"},
 		[]string{"Changelog"},
 	)
 	if consumBlock == "" {
@@ -3177,18 +3632,69 @@ func generateGuide() error {
 
 	sort.Strings(files)
 
-	var specs []GuideData
+	// Parse filenames: guide_CLASS_Spec_HeroKey.json
+	// The hero key is everything after the second underscore in the base name
+	// (after stripping the "guide_" prefix and ".json" suffix).
+	type parsedFile struct {
+		Class   string
+		Spec    string
+		HeroKey string
+		Data    GuideData
+	}
+
+	var parsed []parsedFile
 	for _, f := range files {
-		var g GuideData
 		raw, err := os.ReadFile(f)
 		if err != nil {
 			return fmt.Errorf("error reading %s: %w", f, err)
 		}
+		var g GuideData
 		if err := json.Unmarshal(raw, &g); err != nil {
 			return fmt.Errorf("error parsing %s: %w", f, err)
 		}
-		specs = append(specs, g)
-		fmt.Printf("  Loaded: %s %s\n", g.Class, g.Spec)
+
+		// Extract hero key from filename.
+		base := filepath.Base(f)                           // guide_CLASS_Spec_HeroKey.json
+		base = strings.TrimPrefix(base, "guide_")          // CLASS_Spec_HeroKey.json
+		base = strings.TrimSuffix(base, ".json")           // CLASS_Spec_HeroKey
+		parts := strings.SplitN(base, "_", 3)              // [CLASS, Spec, HeroKey]
+		if len(parts) < 3 {
+			return fmt.Errorf("unexpected filename format: %s (expected guide_CLASS_Spec_HeroKey.json)", f)
+		}
+
+		parsed = append(parsed, parsedFile{
+			Class:   parts[0],
+			Spec:    parts[1],
+			HeroKey: parts[2],
+			Data:    g,
+		})
+		fmt.Printf("  Loaded: %s %s [%s]\n", parts[0], parts[1], parts[2])
+	}
+
+	// Group by class+spec.
+	groupMap := make(map[string]*GuideGroup)
+	var groupOrder []string
+	for _, p := range parsed {
+		key := p.Class + "_" + p.Spec
+		grp, exists := groupMap[key]
+		if !exists {
+			grp = &GuideGroup{Class: p.Class, Spec: p.Spec}
+			groupMap[key] = grp
+			groupOrder = append(groupOrder, key)
+		}
+		grp.Entries = append(grp.Entries, GuideEntry{
+			HeroKey:     p.HeroKey,
+			Updated:     p.Data.Updated,
+			Stats:       p.Data.Stats,
+			Gems:        p.Data.Gems,
+			Enchants:    p.Data.Enchants,
+			Consumables: p.Data.Consumables,
+		})
+	}
+
+	var groups []GuideGroup
+	for _, key := range groupOrder {
+		groups = append(groups, *groupMap[key])
 	}
 
 	tmpl, err := template.ParseFiles("templates/GearPath_Stats.lua.tmpl")
@@ -3205,11 +3711,11 @@ func generateGuide() error {
 
 	if err := tmpl.Execute(outFile, GuideTemplateData{
 		Generated: time.Now().Format("2006-01-02 15:04:05"),
-		Specs:     specs,
+		Groups:    groups,
 	}); err != nil {
 		return fmt.Errorf("template error: %w", err)
 	}
 
-	fmt.Printf("\nGenerated: %s (%d specs)\n", outputPath, len(specs))
+	fmt.Printf("\nGenerated: %s (%d groups, %d entries)\n", outputPath, len(groups), len(parsed))
 	return nil
 }

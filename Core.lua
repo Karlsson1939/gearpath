@@ -177,6 +177,26 @@ function GearPath:GetBiSForCurrentSpec()
     return specData["any"]
 end
 
+-- Schema: GuideData[class][spec][heroKey] → { Stats, Gems, Enchants, Consumables }
+-- Same resolution as GetBiSForCurrentSpec: hero-specific → "any" fallback → nil.
+function GearPath:GetGuideForCurrentSpec()
+    if not self.GuideData then return nil end
+
+    local class = self.currentClass
+    local spec  = self.currentSpec
+    if not class or not spec then return nil end
+
+    local specData = self.GuideData[class] and self.GuideData[class][spec]
+    if not specData then return nil end
+
+    local hero = self.currentHeroTalent
+    if hero and specData[hero] then
+        return specData[hero]
+    end
+
+    return specData["any"]
+end
+
 function GearPath:OnDetectionComplete(class, spec, heroTalent)
     self.currentClass       = class
     self.currentSpec        = spec

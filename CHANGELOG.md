@@ -2,6 +2,20 @@
 
 All notable changes to GearPath will be documented in this file.
 
+## [0.3.0] - 2026-04-18
+
+### Added
+
+- **Stats & Consumables tab.** New tab showing stat priority, recommended gems, enchants, and consumables for your current spec and hero talent. Data updates automatically when you switch hero talents.
+
+- **Per-hero-talent stat priorities.** Blood DK (Deathbringer / San'layn), Enhancement Shaman (Stormbringer / Totemic), Shadow Priest (Archon / Voidweaver), and Holy Paladin (Herald of the Sun / Lightsmith) show correct stat priorities for each hero talent. Holy Paladin includes a "General" stat priority as fallback for players without an active hero talent selection.
+
+- Stats & Consumables data covers 13 specs across all classes. Full 40-spec coverage is in progress.
+
+### Changed
+
+- Tab order is now Priority / BiS List / Stats / Vault. Vault moved from position 3 to 4.
+
 ## [0.2.6] - 2026-04-17
 
 ### Fixed
