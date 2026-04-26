@@ -2,6 +2,12 @@
 
 All notable changes to GearPath will be documented in this file.
 
+## [0.4.6] - 2026-04-26
+
+### Added
+
+- **Priority tab now scrolls.** When source rows expand to show their items, content that exceeds the visible area is now scrollable instead of rendering outside the addon frame. The BiS completion bar and ranking explanation stay pinned at the top while the source list scrolls below them.
+
 ## [0.4.5] - 2026-04-26
 
 ### Fixed

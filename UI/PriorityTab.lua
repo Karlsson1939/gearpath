@@ -29,6 +29,14 @@ function PriorityTab:Show(parent)
     if not container then
         container = CreateFrame("Frame", "GearPathPriorityTab", parent)
         container:SetAllPoints(parent)
+
+        container.scrollFrame = CreateFrame("ScrollFrame", nil, container, "UIPanelScrollFrameTemplate")
+        container.scrollFrame:SetPoint("TOPLEFT", container, "TOPLEFT", 0, -36)
+        container.scrollFrame:SetPoint("BOTTOMRIGHT", container, "BOTTOMRIGHT", -20, 0)
+
+        container.scrollChild = CreateFrame("Frame", nil, container.scrollFrame)
+        container.scrollChild:SetSize(parent:GetWidth() - 20, 1)
+        container.scrollFrame:SetScrollChild(container.scrollChild)
     else
         container:SetParent(parent)
         container:SetAllPoints(parent)
@@ -62,9 +70,9 @@ function PriorityTab:Refresh()
 
     self:DrawProgressBar()
 
-    local yOffset = -36
+    local yOffset = 0
     for i, sourceData in ipairs(engine.rankedSources) do
-        local row = self:CreateSourceRow(container, sourceData, i, yOffset)
+        local row = self:CreateSourceRow(container.scrollChild, sourceData, i, yOffset)
         table.insert(rows, row)
         yOffset = yOffset - 58
     end
@@ -137,13 +145,14 @@ end
 
 function PriorityTab:RepositionRows()
     local ROW_GAP = 6
-    local yOffset = -36
+    local yOffset = 0
     for _, r in ipairs(rows) do
         r:ClearAllPoints()
-        r:SetPoint("TOPLEFT", container, "TOPLEFT", 0, yOffset)
-        r:SetPoint("TOPRIGHT", container, "TOPRIGHT", 0, yOffset)
+        r:SetPoint("TOPLEFT", container.scrollChild, "TOPLEFT", 0, yOffset)
+        r:SetPoint("TOPRIGHT", container.scrollChild, "TOPRIGHT", 0, yOffset)
         yOffset = yOffset - r:GetHeight() - ROW_GAP
     end
+    container.scrollChild:SetHeight(math.abs(yOffset))
 end
 
 function PriorityTab:CreateSourceRow(parent, sourceData, index, yOffset)
