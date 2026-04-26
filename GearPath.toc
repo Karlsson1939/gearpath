@@ -2,7 +2,7 @@
 ## Title: GearPath
 ## Notes: Ranks content sources by how many BiS upgrades they contain for your spec.
 ## Author: Tony
-## Version: 0.3.0
+## Version: 0.3.1
 ## SavedVariables: GearPathDB
 ## SavedVariablesPerCharacter: GearPathCharDB
 

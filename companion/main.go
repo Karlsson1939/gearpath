@@ -203,32 +203,36 @@ var heroTalentSplits = map[string][]string{
 }
 
 // heroGuideTab describes a hero-talent tab on an Icy Veins guide page.
-// StatSelector is a CSS selector for the tab button that, when clicked in
-// headless Chrome, makes that hero talent's stat content visible.
 type heroGuideTab struct {
-	Key          string // normalized key matching Detection.lua's normalizeKey
-	DisplayName  string // human-readable name for post-click validation
-	StatSelector string // CSS selector to click on the stat priority page
+	Key                string         // normalized key matching Detection.lua's normalizeKey
+	DisplayName        string         // human-readable name
+	StatSelector       string         // CSS selector on stat page; empty = single-read
+	ConsumHeroSelector string         // CSS selector to switch hero on consumables page
+	ConsumSubTabs      []consumSubTab // sub-tabs within this hero's consumable section
 }
 
-// heroGuideSpec groups the hero talent tabs for a spec, plus an optional
-// fallback selector for a "General" stat priority section. When set, the
-// scraper clicks FallbackSelector first and stores the result as an _any
-// entry — used by users without an active hero talent selection.
+// consumSubTab describes a sub-tab within a hero talent's consumable section.
+// Content determines which parser runs on the page text after clicking.
+type consumSubTab struct {
+	Selector string // CSS selector for the sub-tab button
+	Content  string // "gems", "enchants", or "consumables"
+}
+
+// heroGuideSpec groups the hero talent tabs for a spec.
 type heroGuideSpec struct {
-	Tabs             []heroGuideTab
-	FallbackSelector string // if non-empty, click this and store as _any
+	Tabs                 []heroGuideTab
+	FallbackSelector     string // if non-empty, click this on stat page and store as _any
+	ConsumSubTabsEnabled bool   // when true, use nested-tab consumable scraping per hero
 }
 
 // heroGuideSplits declares specs where Icy Veins publishes per-hero-talent
-// stat priorities behind a tab UI. For these specs, the scraper clicks each
-// tab and parses stats independently, producing one guide JSON per hero talent.
+// content behind tab UIs on stat or consumable pages. Tabs with empty
+// StatSelector use a single stat-page read (both hero talents' stats visible).
+// When ConsumSubTabsEnabled is true, the scraper clicks per-hero sub-tabs
+// on the consumables page. Otherwise consumables are parsed once and shared.
 //
-// Consumables for all specs (including these) are parsed once from the full
-// page text and duplicated to each hero key. Per-hero consumable parsing is
-// deferred to v0.3.1+ — consumable differences for Blood DK (Deathbringer vs
-// San'layn) and Enhancement Shaman (Stormbringer vs Totemic) are inline prose,
-// not tabbed sections, making structured extraction fragile.
+// Inline prose consumable differences (e.g., Blood DK Deathbringer vs San'layn
+// flask) are not captured; see Icy Veins for hero-specific consumable nuance.
 var heroGuideSplits = map[string]heroGuideSpec{
 	"DEATHKNIGHT_Blood": {
 		Tabs: []heroGuideTab{
@@ -241,6 +245,31 @@ var heroGuideSplits = map[string]heroGuideSpec{
 		Tabs: []heroGuideTab{
 			{Key: "HeraldoftheSun", DisplayName: "Herald of the Sun", StatSelector: "#area_2_button"},
 			{Key: "Lightsmith", DisplayName: "Lightsmith", StatSelector: "#area_3_button"},
+		},
+	},
+	"PRIEST_Discipline": {
+		ConsumSubTabsEnabled: true,
+		Tabs: []heroGuideTab{
+			{
+				Key:                "Oracle",
+				DisplayName:        "Oracle",
+				ConsumHeroSelector: "#rotation_switch_oracle",
+				ConsumSubTabs: []consumSubTab{
+					{Selector: "#area_1_button", Content: "gems"},
+					{Selector: "#area_2_button", Content: "enchants"},
+					{Selector: "#area_3_button", Content: "consumables"},
+				},
+			},
+			{
+				Key:                "Voidweaver",
+				DisplayName:        "Voidweaver",
+				ConsumHeroSelector: "#rotation_switch_voidweaver",
+				ConsumSubTabs: []consumSubTab{
+					{Selector: "#area_4_button", Content: "gems"},
+					{Selector: "#area_5_button", Content: "enchants"},
+					{Selector: "#area_6_button", Content: "consumables"},
+				},
+			},
 		},
 	},
 	"PRIEST_Shadow": {
@@ -2647,15 +2676,9 @@ type GuideData struct {
 }
 
 type StatPriority struct {
-	Format     string
-	Ordered    []string
-	Percentage []StatPct
-	Note       string
-}
-
-type StatPct struct {
-	Stat string
-	Pct  int
+	Format  string
+	Ordered []string
+	Note    string
 }
 
 type GemEntry struct {
@@ -2838,37 +2861,23 @@ func scrapeGuideSpec(browserCtx context.Context, slug, class, spec, today string
 	return guide, nil
 }
 
-// scrapeGuideSpecHero scrapes guide data for a spec with per-hero-talent stat
-// tabs. It navigates to the stat page once, then clicks each hero talent tab
-// and reads the stat content independently. Consumables are parsed once from
-// the full page text and duplicated to each hero key (per-hero consumable
-// parsing deferred to v0.3.1+).
+// scrapeGuideSpecHero scrapes guide data for a spec with per-hero-talent
+// content. Stats and consumables are handled independently:
+//
+// Stats: if tabs have StatSelector, clicks each tab and parses per hero.
+// If StatSelector is empty, reads once and duplicates to all hero keys.
+//
+// Consumables: if ConsumSubTabsEnabled, clicks per-hero + per-content-type
+// sub-tabs. Otherwise reads once and shares across hero keys.
 //
 // Returns a map of heroKey → *GuideData. If FallbackSelector is set, also
 // includes an "any" entry from the General stat priority tab.
 func scrapeGuideSpecHero(browserCtx context.Context, slug, class, spec, today string, heroSpec heroGuideSpec) (map[string]*GuideData, error) {
-	// --- Stat page: click each hero talent tab and parse independently ---
-	statURL := fmt.Sprintf("https://www.icy-veins.com/wow/%s%s", slug, statSuffix)
-	pageCtx, pageCancel := context.WithTimeout(browserCtx, 60*time.Second)
-	defer pageCancel()
+	tag := class + "_" + spec
 
-	err := chromedp.Run(pageCtx,
-		chromedp.Navigate(statURL),
-		chromedp.WaitVisible(".page_content", chromedp.ByQuery),
-		chromedp.Sleep(400*time.Millisecond),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("stat page navigate: %w", err)
-	}
-
-	heroStats := make(map[string]StatPriority)
-
-	// clickTab uses JavaScript click() instead of chromedp.Click because
-	// Icy Veins' tab buttons are <span> elements whose event listeners don't
-	// respond to chromedp's synthetic mouse events.
-	clickTab := func(selector string) error {
+	clickTab := func(ctx context.Context, selector string) error {
 		var ok bool
-		err := chromedp.Run(pageCtx,
+		err := chromedp.Run(ctx,
 			chromedp.Evaluate(fmt.Sprintf(`(function(){ var el = document.querySelector('%s'); if(!el) return false; el.click(); return true; })()`, selector), &ok),
 			chromedp.Sleep(500*time.Millisecond),
 		)
@@ -2881,81 +2890,182 @@ func scrapeGuideSpecHero(browserCtx context.Context, slug, class, spec, today st
 		return nil
 	}
 
-	readPageText := func() (string, error) {
+	readPageText := func(ctx context.Context) (string, error) {
 		var text string
-		err := chromedp.Run(pageCtx,
+		err := chromedp.Run(ctx,
 			chromedp.Evaluate(`document.querySelector('.page_content').innerText`, &text),
 		)
 		return text, err
 	}
 
+	// =================================================================
+	// STATS PHASE
+	// =================================================================
+	statURL := fmt.Sprintf("https://www.icy-veins.com/wow/%s%s", slug, statSuffix)
+	statCtx, statCancel := context.WithTimeout(browserCtx, 60*time.Second)
+	defer statCancel()
+
+	err := chromedp.Run(statCtx,
+		chromedp.Navigate(statURL),
+		chromedp.WaitVisible(".page_content", chromedp.ByQuery),
+		chromedp.Sleep(400*time.Millisecond),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("stat page navigate: %w", err)
+	}
+
+	heroStats := make(map[string]StatPriority)
+
 	// Optional fallback: click the "General" tab and store as _any.
 	if heroSpec.FallbackSelector != "" {
-		if err := clickTab(heroSpec.FallbackSelector); err != nil {
-			fmt.Printf("WARN [%s_%s] fallback stat tab click failed (%s): %v\n", class, spec, heroSpec.FallbackSelector, err)
-		} else if fallbackText, err := readPageText(); err == nil {
-			heroStats["any"] = parseStatPriority(fallbackText)
+		if err := clickTab(statCtx, heroSpec.FallbackSelector); err != nil {
+			fmt.Printf("WARN [%s] fallback stat tab click failed (%s): %v\n", tag, heroSpec.FallbackSelector, err)
+		} else if text, err := readPageText(statCtx); err == nil {
+			heroStats["any"] = parseStatPriority(text)
 		}
 	}
 
-	// Per-hero-talent tabs.
+	// Check if any tab needs stat-page clicking.
+	needsStatClicks := false
 	for _, tab := range heroSpec.Tabs {
-		if err := clickTab(tab.StatSelector); err != nil {
-			fmt.Printf("WARN [%s_%s] stat tab click failed for %s (%s): %v\n", class, spec, tab.Key, tab.StatSelector, err)
-			continue
+		if tab.StatSelector != "" {
+			needsStatClicks = true
+			break
 		}
+	}
 
-		statText, err := readPageText()
+	if needsStatClicks {
+		for _, tab := range heroSpec.Tabs {
+			if tab.StatSelector == "" {
+				continue
+			}
+			if err := clickTab(statCtx, tab.StatSelector); err != nil {
+				fmt.Printf("WARN [%s] stat tab click failed for %s (%s): %v\n", tag, tab.Key, tab.StatSelector, err)
+				continue
+			}
+			text, err := readPageText(statCtx)
+			if err != nil {
+				fmt.Printf("WARN [%s] stat text read failed for %s: %v\n", tag, tab.Key, err)
+				continue
+			}
+			heroStats[tab.Key] = parseStatPriority(text)
+		}
+	} else {
+		// No stat tabs: single read, parse once, store for all hero keys.
+		text, err := readPageText(statCtx)
 		if err != nil {
-			fmt.Printf("WARN [%s_%s] stat text read failed for %s: %v\n", class, spec, tab.Key, err)
-			continue
+			return nil, fmt.Errorf("stat page read: %w", err)
 		}
-
-		heroStats[tab.Key] = parseStatPriority(statText)
+		parsed := parseStatPriority(text)
+		for _, tab := range heroSpec.Tabs {
+			heroStats[tab.Key] = parsed
+		}
 	}
 
 	if len(heroStats) == 0 {
-		return nil, fmt.Errorf("no hero talent stat tabs succeeded")
+		return nil, fmt.Errorf("no hero talent stats captured")
 	}
 
-	// --- Consumable page: single read, shared across hero talents ---
+	// =================================================================
+	// CONSUMABLES PHASE
+	// =================================================================
 	consumURL := fmt.Sprintf("https://www.icy-veins.com/wow/%s%s", slug, gearSuffix)
-	var consumText string
-	pageCtx2, pageCancel2 := context.WithTimeout(browserCtx, 30*time.Second)
-	err = chromedp.Run(pageCtx2,
+	consumCtx, consumCancel := context.WithTimeout(browserCtx, 30*time.Second)
+	defer consumCancel()
+
+	err = chromedp.Run(consumCtx,
 		chromedp.Navigate(consumURL),
 		chromedp.WaitVisible(".page_content", chromedp.ByQuery),
 		chromedp.Sleep(400*time.Millisecond),
-		chromedp.Evaluate(`document.querySelector('.page_content').innerText`, &consumText),
 	)
-	pageCancel2()
 	if err != nil {
-		return nil, fmt.Errorf("consumables page: %w", err)
+		return nil, fmt.Errorf("consumables page navigate: %w", err)
 	}
 
-	sharedGems := parseGems(consumText)
-	sharedEnchants := parseEnchants(consumText)
-	sharedConsumables := parseConsumables(consumText)
-
-	// --- Assemble one GuideData per hero key ---
 	results := make(map[string]*GuideData)
-	for key, stats := range heroStats {
-		results[key] = &GuideData{
-			Class:       class,
-			Spec:        spec,
-			Updated:     today,
-			Stats:       stats,
-			Gems:        sharedGems,
-			Enchants:    sharedEnchants,
-			Consumables: sharedConsumables,
+
+	if heroSpec.ConsumSubTabsEnabled {
+		// Nested sub-tab path: per-hero gems/enchants/consumables.
+		for _, tab := range heroSpec.Tabs {
+			stats, ok := heroStats[tab.Key]
+			if !ok {
+				continue
+			}
+
+			if tab.ConsumHeroSelector != "" {
+				if err := clickTab(consumCtx, tab.ConsumHeroSelector); err != nil {
+					fmt.Printf("WARN [%s] consum hero tab failed for %s (%s): %v\n", tag, tab.Key, tab.ConsumHeroSelector, err)
+					continue
+				}
+			}
+
+			guide := &GuideData{
+				Class:   class,
+				Spec:    spec,
+				Updated: today,
+				Stats:   stats,
+			}
+
+			for _, sub := range tab.ConsumSubTabs {
+				if err := clickTab(consumCtx, sub.Selector); err != nil {
+					fmt.Printf("WARN [%s] sub-tab click failed for %s %s (%s): %v\n", tag, tab.Key, sub.Content, sub.Selector, err)
+					continue
+				}
+				text, err := readPageText(consumCtx)
+				if err != nil {
+					fmt.Printf("WARN [%s] sub-tab read failed for %s %s: %v\n", tag, tab.Key, sub.Content, err)
+					continue
+				}
+				switch sub.Content {
+				case "gems":
+					guide.Gems = parseGems(text)
+				case "enchants":
+					guide.Enchants = parseEnchants(text)
+				case "consumables":
+					guide.Consumables = parseConsumables(text)
+				}
+			}
+
+			// Fail loudly if sub-tab scraping produced empty data.
+			if guide.Gems == nil || len(guide.Enchants) == 0 {
+				fmt.Printf("WARN [%s] %s: sub-tab scrape produced empty gems or enchants — skipping hero key\n", tag, tab.Key)
+				continue
+			}
+
+			results[tab.Key] = guide
+		}
+	} else {
+		// Single-read path: parse once, share across all hero keys.
+		consumText, err := readPageText(consumCtx)
+		if err != nil {
+			return nil, fmt.Errorf("consumables page read: %w", err)
+		}
+
+		sharedGems := parseGems(consumText)
+		sharedEnchants := parseEnchants(consumText)
+		sharedConsum := parseConsumables(consumText)
+
+		for key, stats := range heroStats {
+			results[key] = &GuideData{
+				Class:       class,
+				Spec:        spec,
+				Updated:     today,
+				Stats:       stats,
+				Gems:        sharedGems,
+				Enchants:    sharedEnchants,
+				Consumables: sharedConsum,
+			}
+		}
+
+		// warnGuideGaps once (consumables are shared).
+		for _, guide := range results {
+			warnGuideGaps(consumText, guide, class, spec)
+			break
 		}
 	}
 
-	// warnGuideGaps once per spec (consumables are shared, not per-hero).
-	// Use the first hero talent's guide for the check.
-	for _, guide := range results {
-		warnGuideGaps(consumText, guide, class, spec)
-		break
+	if len(results) == 0 {
+		return nil, fmt.Errorf("no hero talent guide data assembled")
 	}
 
 	return results, nil
@@ -2983,14 +3093,15 @@ func normalizeStatLine(line string, knownStats []string) []string {
 
 	// Normalize all equality indicators to "=".
 	normalized := line
-	for _, eq := range []string{"≅", "≈", "≃", "~="} {
+	for _, eq := range []string{"≅", "≈", "≃", "≥", "~="} {
 		normalized = strings.ReplaceAll(normalized, eq, "=")
 	}
 	normalized = strings.ReplaceAll(normalized, ">=", "=")
 	normalized = strings.ReplaceAll(normalized, "<=", "=")
+	normalized = strings.ReplaceAll(normalized, "/", "=")
 
-	// Split by = and ,
-	parts := regexp.MustCompile(`[=,]`).Split(normalized, -1)
+	// Split by =, comma, and &.
+	parts := regexp.MustCompile(`[=,&]`).Split(normalized, -1)
 
 	// Further split each part by word-boundary "and" / "or".
 	var tokens []string
@@ -3002,6 +3113,8 @@ func normalizeStatLine(line string, knownStats []string) []string {
 				s = s[:idx]
 			}
 			s = strings.TrimSpace(s)
+			s = strings.TrimRight(s, "*") // strip footnote markers (e.g., "Haste*")
+			s = strings.TrimSpace(s)
 			if s != "" {
 				tokens = append(tokens, s)
 			}
@@ -3010,6 +3123,11 @@ func normalizeStatLine(line string, knownStats []string) []string {
 
 	if len(tokens) == 0 {
 		return nil
+	}
+
+	// Stat name aliases: short forms used on some Icy Veins pages.
+	statAliases := map[string]string{
+		"crit": "Critical Strike",
 	}
 
 	// Every token must be a known stat; use the canonical name from knownStats.
@@ -3021,6 +3139,12 @@ func normalizeStatLine(line string, knownStats []string) []string {
 				matched = append(matched, stat)
 				found = true
 				break
+			}
+		}
+		if !found {
+			if canonical, ok := statAliases[strings.ToLower(token)]; ok {
+				matched = append(matched, canonical)
+				found = true
 			}
 		}
 		if !found {
@@ -3224,17 +3348,30 @@ func parseStatPriority(text string) StatPriority {
 		"Item Level", "Armor",
 	}
 
+	// Path 1: percentage format ("50% into Mastery"). Convert to ordered
+	// by sorting descending by percentage. Ties preserve page order.
 	pctRegex := regexp.MustCompile(`(\d+)%\s+into\s+([A-Za-z ]+)`)
 	pctMatches := pctRegex.FindAllStringSubmatch(text, -1)
 	if len(pctMatches) >= 2 {
-		sp.Format = "percentage"
+		type pctEntry struct {
+			stat string
+			pct  int
+		}
+		var entries []pctEntry
 		for _, m := range pctMatches {
 			pct, _ := strconv.Atoi(m[1])
 			stat := strings.TrimSpace(m[2])
 			stat = strings.TrimSuffix(stat, " FAQ")
 			stat = strings.TrimSuffix(stat, " Gems")
 			stat = strings.TrimSuffix(stat, " The")
-			sp.Percentage = append(sp.Percentage, StatPct{Stat: stat, Pct: pct})
+			entries = append(entries, pctEntry{stat: stat, pct: pct})
+		}
+		sort.SliceStable(entries, func(i, j int) bool {
+			return entries[i].pct > entries[j].pct
+		})
+		sp.Format = "ordered"
+		for _, e := range entries {
+			sp.Ordered = append(sp.Ordered, e.stat)
 		}
 		return sp
 	}
@@ -3247,7 +3384,14 @@ func parseStatPriority(text string) StatPriority {
 			parts := strings.Split(line, ">")
 			for _, p := range parts {
 				p = strings.TrimSpace(p)
-				if p != "" && len(p) < 35 {
+				if p == "" || len(p) >= 45 {
+					continue
+				}
+				// Expand compound chunks like "Crit = Mastery = Vers"
+				// through normalizeStatLine, which handles =, /, &, etc.
+				if expanded := normalizeStatLine(p, knownStats); len(expanded) > 0 {
+					sp.Ordered = append(sp.Ordered, expanded...)
+				} else {
 					sp.Ordered = append(sp.Ordered, p)
 				}
 			}
@@ -3344,8 +3488,8 @@ var knownGems = []string{
 
 func parseGems(text string) []GemEntry {
 	section := extractSectionByHeading(text,
-		[]string{"Recommended Gems", "Best Gems", "Gems for"},
-		[]string{"Enchants for", "Best Enchants for", "Best Enchants", "Enchants and", "Changelog"},
+		[]string{"Recommended Gems", "Best Gems", "Gems for", "Oracle Gems", "Voidweaver Gems"},
+		[]string{"Enchants for", "Best Enchants for", "Best Enchants", "Enchants and", "Oracle Enchants", "Voidweaver Enchants", "Changelog"},
 	)
 	if section == "" {
 		return nil
@@ -3370,8 +3514,8 @@ func parseEnchants(text string) []EnchantEntry {
 	var enchants []EnchantEntry
 
 	section := extractSectionByHeading(text,
-		[]string{"Enchants for", "Best Enchants for", "Best Enchants"},
-		[]string{"Consumable Recommendation", "Extra Consumable", "Best Midnight Consumables", "Best Consumables", "Consumables for", "How to Choose", "Changelog"},
+		[]string{"Enchants for", "Best Enchants for", "Best Enchants", "Oracle Enchants", "Voidweaver Enchants"},
+		[]string{"Consumable Recommendation", "Extra Consumable", "Best Midnight Consumables", "Best Consumables", "Consumables for", "Oracle Consumables", "Voidweaver Consumables", "How to Choose", "Changelog"},
 	)
 	if section == "" {
 		return enchants
@@ -3538,7 +3682,7 @@ func parseConsumables(text string) ConsumableSet {
 	cs := ConsumableSet{}
 
 	consumBlock := extractSectionByHeading(text,
-		[]string{"Consumable Recommendations", "Extra Consumable", "Best Midnight Consumables", "Best Consumables", "Consumables for"},
+		[]string{"Consumable Recommendations", "Extra Consumable", "Best Midnight Consumables", "Best Consumables", "Consumables for", "Oracle Consumables", "Voidweaver Consumables", "Best Flasks and Potions"},
 		[]string{"Changelog"},
 	)
 	if consumBlock == "" {
@@ -3618,9 +3762,6 @@ func extractSectionByHeading(text string, startMarkers, endMarkers []string) str
 	}
 
 	section := strings.TrimSpace(strings.Join(lines[startLine:endLine], "\n"))
-	if len(section) > 3000 {
-		section = section[:3000]
-	}
 	return section
 }
 

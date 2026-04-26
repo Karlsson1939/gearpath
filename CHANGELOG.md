@@ -2,6 +2,20 @@
 
 All notable changes to GearPath will be documented in this file.
 
+## [0.3.1] - 2026-04-26
+
+### Added
+
+- **Full 40-spec coverage.** Stats & Consumables data now covers every spec in the game, up from 13 in v0.3.0.
+
+- **Discipline Priest per-hero-talent data.** Oracle and Voidweaver have separate gems, enchants, and consumables sourced from Icy Veins' nested tab UI.
+
+### Fixed
+
+- **Stat priorities for 5 specs.** Marksmanship Hunter, Vengeance Demon Hunter, Protection Paladin, Brewmaster Monk, and Discipline Priest now show complete stat priority lists. Previously these specs showed only 0-2 stats due to unhandled formatting on Icy Veins (slash separators, ampersand separators, footnote markers, and abbreviated stat names).
+
+- **Brewmaster Monk augment rune.** Was silently dropped because the consumable section text exceeded an internal length limit. The limit has been removed; consumable sections are now bounded only by their start and end markers.
+
 ## [0.3.0] - 2026-04-18
 
 ### Added

@@ -1,36 +1,29 @@
 {
-  "Class": "ROGUE",
-  "Spec": "Assassination",
+  "Class": "DEMONHUNTER",
+  "Spec": "Vengeance",
   "Updated": "2026-04-26",
   "Stats": {
     "Format": "ordered",
     "Ordered": [
-      "Critical Strike",
+      "Agility",
       "Haste",
-      "Mastery",
-      "Versatility"
+      "Versatility",
+      "Critical Strike",
+      "Mastery"
     ],
     "Note": ""
   },
   "Gems": [
     {
-      "Name": "Powerful Eversong Diamond",
+      "Name": "Indecipherable Eversong Diamond",
       "Note": ""
     },
     {
-      "Name": "Flawless Deadly Amethyst",
-      "Note": ""
-    },
-    {
-      "Name": "Flawless Deadly Lapis",
+      "Name": "Thalassian Diamond",
       "Note": ""
     },
     {
       "Name": "Flawless Deadly Peridot",
-      "Note": ""
-    },
-    {
-      "Name": "Flawless Quick Garnet",
       "Note": ""
     }
   ],
@@ -38,6 +31,10 @@
     {
       "Slot": "Off Hand",
       "Enchant": "Enchant Weapon - Berserker's Rage"
+    },
+    {
+      "Slot": "Chest",
+      "Enchant": "Enchant Chest - Mark of the Worldsoul"
     },
     {
       "Slot": "Helm",
@@ -48,27 +45,23 @@
       "Enchant": "Enchant Shoulders - Silvermoon's Mending"
     },
     {
-      "Slot": "Chest",
-      "Enchant": "Enchant Chest - Mark of the Worldsoul"
-    },
-    {
-      "Slot": "Legs",
-      "Enchant": "Forest Hunter's Armor Kit."
-    },
-    {
       "Slot": "Boots",
       "Enchant": "Enchant Boots - Shaladrassil's Roots"
     },
     {
       "Slot": "Rings",
-      "Enchant": "Enchant Ring - Nature's Fury"
+      "Enchant": "Enchant Ring - Silvermoon's Alacrity"
+    },
+    {
+      "Slot": "Legs",
+      "Enchant": "Blood Knight's Armor Kit"
     }
   ],
   "Consumables": {
-    "Flask": "Flask of the Shattered Sun",
+    "Flask": "Flask of the Blood Knights",
     "Food": "Silvermoon Parade",
     "Potion": "Potion of Recklessness",
     "WeaponOil": "Thalassian Phoenix Oil",
-    "AugRune": "Void-Touched Augment Rune"
+    "AugRune": ""
   }
 }

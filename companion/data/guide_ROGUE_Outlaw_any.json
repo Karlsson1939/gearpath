@@ -1,15 +1,13 @@
 {
-  "Class": "WARRIOR",
-  "Spec": "Protection",
+  "Class": "ROGUE",
+  "Spec": "Outlaw",
   "Updated": "2026-04-26",
   "Stats": {
     "Format": "ordered",
     "Ordered": [
-      "Strength",
-      "Item Level",
+      "Critical Strike",
       "Haste",
       "Versatility",
-      "Critical Strike",
       "Mastery"
     ],
     "Note": ""
@@ -20,25 +18,33 @@
       "Note": ""
     },
     {
+      "Name": "Powerful Eversong Diamond",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Deadly Amethyst",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Deadly Lapis",
+      "Note": ""
+    },
+    {
       "Name": "Flawless Deadly Peridot",
       "Note": ""
     },
     {
-      "Name": "Flawless Versatile Peridot",
+      "Name": "Flawless Quick Garnet",
       "Note": ""
     }
   ],
   "Enchants": [
     {
-      "Slot": "Rings",
-      "Enchant": "Enchant Ring - Silvermoon's Alacrity"
+      "Slot": "Off Hand",
+      "Enchant": "Enchant Weapon - Jan'alai's Precision"
     },
     {
-      "Slot": "Weapon",
-      "Enchant": "Enchant Weapon - Acuity of the Ren'dorei"
-    },
-    {
-      "Slot": "Helmet",
+      "Slot": "Helm",
       "Enchant": "Enchant Helm - Empowered Hex of Leeching"
     },
     {
@@ -51,17 +57,21 @@
     },
     {
       "Slot": "Legs",
-      "Enchant": "Blood Knight's Armor Kit"
+      "Enchant": "Forest Hunter's Armor Kit"
     },
     {
       "Slot": "Boots",
       "Enchant": "Enchant Boots - Shaladrassil's Roots"
+    },
+    {
+      "Slot": "Rings",
+      "Enchant": "Enchant Ring - Nature's Fury"
     }
   ],
   "Consumables": {
     "Flask": "Flask of the Shattered Sun",
-    "Food": "Harandar Celebration",
-    "Potion": "Light's Potential",
+    "Food": "Silvermoon Parade",
+    "Potion": "Potion of Recklessness",
     "WeaponOil": "Thalassian Phoenix Oil",
     "AugRune": "Void-Touched Augment Rune"
   }

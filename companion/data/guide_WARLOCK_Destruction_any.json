@@ -1,13 +1,13 @@
 {
   "Class": "WARLOCK",
-  "Spec": "Affliction",
+  "Spec": "Destruction",
   "Updated": "2026-04-26",
   "Stats": {
     "Format": "ordered",
     "Ordered": [
       "Intellect",
-      "Haste",
       "Critical Strike",
+      "Haste",
       "Mastery",
       "Versatility"
     ],

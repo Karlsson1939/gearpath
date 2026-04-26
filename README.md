@@ -12,25 +12,50 @@ This addon is not affiliated with or endorsed by Icy Veins.
 
 ## Supported specs (Season 1)
 
-Stats & Consumables data is available for the following specs. Hero-talent-specific stat priorities are noted where applicable.
+Stats & Consumables data covers all 40 specs. Hero-talent-specific stat priorities and consumables are noted where applicable.
 
 | Class | Spec | Hero talents |
 |-------|------|-------------|
 | Death Knight | Blood | Deathbringer, San'layn |
+| Death Knight | Frost | |
+| Death Knight | Unholy | |
+| Demon Hunter | Devourer | |
 | Demon Hunter | Havoc | |
+| Demon Hunter | Vengeance | |
+| Druid | Balance | |
+| Druid | Feral | |
+| Druid | Guardian | |
 | Druid | Restoration | |
+| Evoker | Augmentation | |
+| Evoker | Devastation | |
 | Evoker | Preservation | |
 | Hunter | Beast Mastery | |
+| Hunter | Marksmanship | |
+| Hunter | Survival | |
+| Mage | Arcane | |
 | Mage | Fire | |
+| Mage | Frost | |
+| Monk | Brewmaster | |
+| Monk | Mistweaver | |
 | Monk | Windwalker | |
 | Paladin | Holy | Herald of the Sun, Lightsmith |
+| Paladin | Protection | |
+| Paladin | Retribution | |
+| Priest | Discipline | Oracle, Voidweaver |
+| Priest | Holy | |
 | Priest | Shadow | Archon, Voidweaver |
 | Rogue | Assassination | |
+| Rogue | Outlaw | |
+| Rogue | Subtlety | |
+| Shaman | Elemental | |
 | Shaman | Enhancement | Stormbringer, Totemic |
+| Shaman | Restoration | |
 | Warlock | Affliction | |
+| Warlock | Demonology | |
+| Warlock | Destruction | |
+| Warrior | Arms | |
+| Warrior | Fury | |
 | Warrior | Protection | |
-
-More specs coming — contributions welcome via GitHub.
 
 ## Installation
 
@@ -67,9 +92,8 @@ More specs coming — contributions welcome via GitHub.
 | `/gp vault` | Print vault summary to chat |
 | `/gp reset` | Reset panel position |
 
-## Known limitations (v0.3.0)
+## Known limitations (v0.3.1)
 
-- **Hero-talent consumables are shared.** For specs with per-hero-talent stat priorities, consumable recommendations (flasks, food, potions, etc.) show the same data for both hero talents. Blood DK and Enhancement Shaman have hero-specific consumable differences on Icy Veins that are not yet captured.
+- **Hero-talent consumables are shared for some specs.** Blood DK (Deathbringer / San'layn) and Enhancement Shaman (Stormbringer / Totemic) have hero-specific consumable differences on Icy Veins that are embedded in prose rather than structured sections. Both hero talents currently show the same consumable recommendations. Discipline Priest (Oracle / Voidweaver) has per-hero consumables.
 - **Shadow Priest Archon/Voidweaver stat priorities appear identical.** Icy Veins expresses the difference as percentage ranges (e.g., "Haste 25-33%" vs "24-29%"), which the addon doesn't capture — it only captures the ordering.
 - **Holy Paladin Lightsmith weapon oil.** Both Herald of the Sun and Lightsmith show Thalassian Phoenix Oil. Lightsmith players using Rite of Sanctification may not need a weapon oil.
-- **Supported specs.** Stats & Consumables data currently covers 13 specs. Full 40-spec coverage is in progress.

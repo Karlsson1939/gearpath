@@ -1,15 +1,13 @@
 {
-  "Class": "WARRIOR",
-  "Spec": "Protection",
+  "Class": "PRIEST",
+  "Spec": "Discipline",
   "Updated": "2026-04-26",
   "Stats": {
     "Format": "ordered",
     "Ordered": [
-      "Strength",
-      "Item Level",
       "Haste",
-      "Versatility",
       "Critical Strike",
+      "Versatility",
       "Mastery"
     ],
     "Note": ""
@@ -22,10 +20,6 @@
     {
       "Name": "Flawless Deadly Peridot",
       "Note": ""
-    },
-    {
-      "Name": "Flawless Versatile Peridot",
-      "Note": ""
     }
   ],
   "Enchants": [
@@ -35,10 +29,10 @@
     },
     {
       "Slot": "Weapon",
-      "Enchant": "Enchant Weapon - Acuity of the Ren'dorei"
+      "Enchant": "Enchant Weapon - Berserker's Rage"
     },
     {
-      "Slot": "Helmet",
+      "Slot": "Helm",
       "Enchant": "Enchant Helm - Empowered Hex of Leeching"
     },
     {
@@ -47,11 +41,11 @@
     },
     {
       "Slot": "Chest",
-      "Enchant": "Enchant Chest - Mark of the Worldsoul"
+      "Enchant": "Enchant Chest - Mark of the Magister"
     },
     {
       "Slot": "Legs",
-      "Enchant": "Blood Knight's Armor Kit"
+      "Enchant": "Arcanoweave Spellthread"
     },
     {
       "Slot": "Boots",
@@ -59,9 +53,9 @@
     }
   ],
   "Consumables": {
-    "Flask": "Flask of the Shattered Sun",
-    "Food": "Harandar Celebration",
-    "Potion": "Light's Potential",
+    "Flask": "Flask of the Blood Knights",
+    "Food": "Royal Roast",
+    "Potion": "Potion of Recklessness",
     "WeaponOil": "Thalassian Phoenix Oil",
     "AugRune": "Void-Touched Augment Rune"
   }

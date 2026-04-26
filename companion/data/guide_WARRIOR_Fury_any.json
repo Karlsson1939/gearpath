@@ -1,16 +1,15 @@
 {
   "Class": "WARRIOR",
-  "Spec": "Protection",
+  "Spec": "Fury",
   "Updated": "2026-04-26",
   "Stats": {
     "Format": "ordered",
     "Ordered": [
       "Strength",
-      "Item Level",
+      "Mastery",
       "Haste",
       "Versatility",
-      "Critical Strike",
-      "Mastery"
+      "Critical Strike"
     ],
     "Note": ""
   },
@@ -20,30 +19,26 @@
       "Note": ""
     },
     {
-      "Name": "Flawless Deadly Peridot",
+      "Name": "Flawless Quick Amethyst",
       "Note": ""
     },
     {
-      "Name": "Flawless Versatile Peridot",
+      "Name": "Flawless Masterful Peridot",
       "Note": ""
     }
   ],
   "Enchants": [
     {
-      "Slot": "Rings",
-      "Enchant": "Enchant Ring - Silvermoon's Alacrity"
-    },
-    {
       "Slot": "Weapon",
-      "Enchant": "Enchant Weapon - Acuity of the Ren'dorei"
+      "Enchant": "Enchant Weapon - Arcane Mastery"
     },
     {
-      "Slot": "Helmet",
+      "Slot": "Helm",
       "Enchant": "Enchant Helm - Empowered Hex of Leeching"
     },
     {
       "Slot": "Shoulders",
-      "Enchant": "Enchant Shoulders - Silvermoon's Mending"
+      "Enchant": "Enchant Shoulders - Akil'zon's Swiftness"
     },
     {
       "Slot": "Chest",
@@ -55,13 +50,17 @@
     },
     {
       "Slot": "Boots",
-      "Enchant": "Enchant Boots - Shaladrassil's Roots"
+      "Enchant": "Enchant Boots - Lynx's Dexterity"
+    },
+    {
+      "Slot": "Rings",
+      "Enchant": "Enchant Ring - Eyes of the Eagle"
     }
   ],
   "Consumables": {
-    "Flask": "Flask of the Shattered Sun",
+    "Flask": "Flask of the Magisters",
     "Food": "Harandar Celebration",
-    "Potion": "Light's Potential",
+    "Potion": "Potion of Recklessness",
     "WeaponOil": "Thalassian Phoenix Oil",
     "AugRune": "Void-Touched Augment Rune"
   }

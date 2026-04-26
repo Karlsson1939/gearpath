@@ -1,15 +1,14 @@
 {
-  "Class": "WARRIOR",
-  "Spec": "Protection",
+  "Class": "MONK",
+  "Spec": "Mistweaver",
   "Updated": "2026-04-26",
   "Stats": {
     "Format": "ordered",
     "Ordered": [
-      "Strength",
-      "Item Level",
+      "Intellect",
       "Haste",
-      "Versatility",
       "Critical Strike",
+      "Versatility",
       "Mastery"
     ],
     "Note": ""
@@ -20,25 +19,21 @@
       "Note": ""
     },
     {
-      "Name": "Flawless Deadly Peridot",
+      "Name": "Flawless Quick Lapis",
       "Note": ""
     },
     {
-      "Name": "Flawless Versatile Peridot",
+      "Name": "Flawless Deadly Peridot",
       "Note": ""
     }
   ],
   "Enchants": [
     {
-      "Slot": "Rings",
-      "Enchant": "Enchant Ring - Silvermoon's Alacrity"
-    },
-    {
       "Slot": "Weapon",
       "Enchant": "Enchant Weapon - Acuity of the Ren'dorei"
     },
     {
-      "Slot": "Helmet",
+      "Slot": "Helm",
       "Enchant": "Enchant Helm - Empowered Hex of Leeching"
     },
     {
@@ -51,18 +46,22 @@
     },
     {
       "Slot": "Legs",
-      "Enchant": "Blood Knight's Armor Kit"
+      "Enchant": "Arcanoweave Spellthread"
     },
     {
       "Slot": "Boots",
       "Enchant": "Enchant Boots - Shaladrassil's Roots"
+    },
+    {
+      "Slot": "Rings",
+      "Enchant": "Enchant Ring - Silvermoon's Alacrity"
     }
   ],
   "Consumables": {
-    "Flask": "Flask of the Shattered Sun",
-    "Food": "Harandar Celebration",
+    "Flask": "Flask of the Blood Knights",
+    "Food": "Silvermoon Parade",
     "Potion": "Light's Potential",
     "WeaponOil": "Thalassian Phoenix Oil",
-    "AugRune": "Void-Touched Augment Rune"
+    "AugRune": ""
   }
 }

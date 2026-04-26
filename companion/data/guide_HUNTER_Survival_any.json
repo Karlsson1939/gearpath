@@ -1,16 +1,14 @@
 {
-  "Class": "WARRIOR",
-  "Spec": "Protection",
+  "Class": "HUNTER",
+  "Spec": "Survival",
   "Updated": "2026-04-26",
   "Stats": {
     "Format": "ordered",
     "Ordered": [
-      "Strength",
-      "Item Level",
-      "Haste",
-      "Versatility",
+      "Mastery",
       "Critical Strike",
-      "Mastery"
+      "Haste",
+      "Versatility"
     ],
     "Note": ""
   },
@@ -20,25 +18,13 @@
       "Note": ""
     },
     {
-      "Name": "Flawless Deadly Peridot",
-      "Note": ""
-    },
-    {
-      "Name": "Flawless Versatile Peridot",
+      "Name": "Flawless Deadly Amethyst",
       "Note": ""
     }
   ],
   "Enchants": [
     {
-      "Slot": "Rings",
-      "Enchant": "Enchant Ring - Silvermoon's Alacrity"
-    },
-    {
-      "Slot": "Weapon",
-      "Enchant": "Enchant Weapon - Acuity of the Ren'dorei"
-    },
-    {
-      "Slot": "Helmet",
+      "Slot": "Helm",
       "Enchant": "Enchant Helm - Empowered Hex of Leeching"
     },
     {
@@ -51,15 +37,23 @@
     },
     {
       "Slot": "Legs",
-      "Enchant": "Blood Knight's Armor Kit"
+      "Enchant": "Forest Hunter's Armor Kit"
     },
     {
       "Slot": "Boots",
       "Enchant": "Enchant Boots - Shaladrassil's Roots"
+    },
+    {
+      "Slot": "Rings",
+      "Enchant": "Enchant Ring - Eyes of the Eagle"
+    },
+    {
+      "Slot": "Weapon",
+      "Enchant": "Enchant Weapon - Acuity of the Ren'dorei"
     }
   ],
   "Consumables": {
-    "Flask": "Flask of the Shattered Sun",
+    "Flask": "Flask of the Magisters",
     "Food": "Harandar Celebration",
     "Potion": "Light's Potential",
     "WeaponOil": "Thalassian Phoenix Oil",

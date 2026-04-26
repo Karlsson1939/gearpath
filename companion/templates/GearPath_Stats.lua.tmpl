@@ -23,10 +23,7 @@ GearPath.GuideData["{{$group.Class}}"]["{{$group.Spec}}"]["{{$entry.HeroKey}}"] 
 
     Stats = {
         format  = "{{$entry.Stats.Format}}",
-        ordered = { {{range $entry.Stats.Ordered}}"{{.}}", {{end}} },{{if $entry.Stats.Percentage}}
-        percentage = {
-{{range $entry.Stats.Percentage}}            { stat = "{{.Stat}}", pct = {{.Pct}} },
-{{end}}        },{{end}}{{if $entry.Stats.Note}}
+        ordered = { {{range $entry.Stats.Ordered}}"{{.}}", {{end}} },{{if $entry.Stats.Note}}
         note = "{{$entry.Stats.Note}}",{{end}}
     },
 

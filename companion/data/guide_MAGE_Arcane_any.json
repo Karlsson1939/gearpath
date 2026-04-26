@@ -1,15 +1,15 @@
 {
   "Class": "MAGE",
-  "Spec": "Fire",
+  "Spec": "Arcane",
   "Updated": "2026-04-26",
   "Stats": {
     "Format": "ordered",
     "Ordered": [
       "Intellect",
-      "Haste",
       "Mastery",
       "Versatility",
-      "Critical Strike"
+      "Critical Strike",
+      "Haste"
     ],
     "Note": ""
   },
@@ -19,7 +19,7 @@
       "Note": ""
     },
     {
-      "Name": "Flawless Masterful Peridot",
+      "Name": "Flawless Versatile Amethyst",
       "Note": ""
     }
   ],
@@ -30,7 +30,7 @@
     },
     {
       "Slot": "Legs",
-      "Enchant": "Sunfire Silk Spellthread"
+      "Enchant": "Arcanoweave Spellthread"
     },
     {
       "Slot": "Rings",

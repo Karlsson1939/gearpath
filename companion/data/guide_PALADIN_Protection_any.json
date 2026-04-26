@@ -1,16 +1,14 @@
 {
-  "Class": "WARRIOR",
+  "Class": "PALADIN",
   "Spec": "Protection",
   "Updated": "2026-04-26",
   "Stats": {
     "Format": "ordered",
     "Ordered": [
-      "Strength",
-      "Item Level",
       "Haste",
       "Versatility",
-      "Critical Strike",
-      "Mastery"
+      "Mastery",
+      "Critical Strike"
     ],
     "Note": ""
   },
@@ -20,30 +18,18 @@
       "Note": ""
     },
     {
-      "Name": "Flawless Deadly Peridot",
-      "Note": ""
-    },
-    {
-      "Name": "Flawless Versatile Peridot",
+      "Name": "Flawless Masterful Peridot",
       "Note": ""
     }
   ],
   "Enchants": [
     {
-      "Slot": "Rings",
-      "Enchant": "Enchant Ring - Silvermoon's Alacrity"
-    },
-    {
-      "Slot": "Weapon",
-      "Enchant": "Enchant Weapon - Acuity of the Ren'dorei"
-    },
-    {
-      "Slot": "Helmet",
-      "Enchant": "Enchant Helm - Empowered Hex of Leeching"
+      "Slot": "Helm",
+      "Enchant": "Enchant Helm - Empowered Blessing of Speed"
     },
     {
       "Slot": "Shoulders",
-      "Enchant": "Enchant Shoulders - Silvermoon's Mending"
+      "Enchant": "Enchant Shoulders - Akil'zon's Swiftness"
     },
     {
       "Slot": "Chest",
@@ -55,12 +41,20 @@
     },
     {
       "Slot": "Boots",
-      "Enchant": "Enchant Boots - Shaladrassil's Roots"
+      "Enchant": "Enchant Boots - Farstrider's Hunt"
+    },
+    {
+      "Slot": "Rings",
+      "Enchant": "Enchant Ring - Silvermoon's Tenacity"
+    },
+    {
+      "Slot": "Weapon",
+      "Enchant": "Enchant Weapon - Acuity of the Ren'dorei"
     }
   ],
   "Consumables": {
     "Flask": "Flask of the Shattered Sun",
-    "Food": "Harandar Celebration",
+    "Food": "Royal Roast",
     "Potion": "Light's Potential",
     "WeaponOil": "Thalassian Phoenix Oil",
     "AugRune": "Void-Touched Augment Rune"

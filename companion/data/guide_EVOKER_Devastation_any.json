@@ -1,22 +1,29 @@
 {
-  "Class": "WARRIOR",
-  "Spec": "Protection",
+  "Class": "EVOKER",
+  "Spec": "Devastation",
   "Updated": "2026-04-26",
   "Stats": {
     "Format": "ordered",
     "Ordered": [
-      "Strength",
       "Item Level",
       "Haste",
-      "Versatility",
       "Critical Strike",
-      "Mastery"
+      "Mastery",
+      "Versatility"
     ],
     "Note": ""
   },
   "Gems": [
     {
-      "Name": "Indecipherable Eversong Diamond",
+      "Name": "Powerful Eversong Diamond",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Deadly Amethyst",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Deadly Lapis",
       "Note": ""
     },
     {
@@ -24,11 +31,15 @@
       "Note": ""
     },
     {
-      "Name": "Flawless Versatile Peridot",
+      "Name": "Flawless Quick Garnet",
       "Note": ""
     }
   ],
   "Enchants": [
+    {
+      "Slot": "Helm",
+      "Enchant": "Enchant Helm - Empowered Blessing of Speed"
+    },
     {
       "Slot": "Rings",
       "Enchant": "Enchant Ring - Silvermoon's Alacrity"
@@ -38,12 +49,8 @@
       "Enchant": "Enchant Weapon - Acuity of the Ren'dorei"
     },
     {
-      "Slot": "Helmet",
-      "Enchant": "Enchant Helm - Empowered Hex of Leeching"
-    },
-    {
       "Slot": "Shoulders",
-      "Enchant": "Enchant Shoulders - Silvermoon's Mending"
+      "Enchant": "Enchant Shoulders - Akil'zon's Swiftness"
     },
     {
       "Slot": "Chest",
@@ -51,17 +58,17 @@
     },
     {
       "Slot": "Legs",
-      "Enchant": "Blood Knight's Armor Kit"
+      "Enchant": "Sunfire Silk Spellthread"
     },
     {
       "Slot": "Boots",
-      "Enchant": "Enchant Boots - Shaladrassil's Roots"
+      "Enchant": "Enchant Boots - Farstrider's Hunt"
     }
   ],
   "Consumables": {
-    "Flask": "Flask of the Shattered Sun",
-    "Food": "Harandar Celebration",
-    "Potion": "Light's Potential",
+    "Flask": "Flask of the Blood Knights",
+    "Food": "Silvermoon Parade",
+    "Potion": "Potion of Recklessness",
     "WeaponOil": "Thalassian Phoenix Oil",
     "AugRune": "Void-Touched Augment Rune"
   }

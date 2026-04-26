@@ -1,16 +1,15 @@
 {
-  "Class": "WARRIOR",
-  "Spec": "Protection",
+  "Class": "ROGUE",
+  "Spec": "Subtlety",
   "Updated": "2026-04-26",
   "Stats": {
     "Format": "ordered",
     "Ordered": [
-      "Strength",
-      "Item Level",
       "Haste",
-      "Versatility",
       "Critical Strike",
-      "Mastery"
+      "Mastery",
+      "Haste",
+      "Versatility"
     ],
     "Note": ""
   },
@@ -20,30 +19,34 @@
       "Note": ""
     },
     {
+      "Name": "Flawless Deadly Amethyst",
+      "Note": ""
+    },
+    {
       "Name": "Flawless Deadly Peridot",
       "Note": ""
     },
     {
-      "Name": "Flawless Versatile Peridot",
+      "Name": "Flawless Masterful Peridot",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Masterful Garnet",
       "Note": ""
     }
   ],
   "Enchants": [
     {
-      "Slot": "Rings",
-      "Enchant": "Enchant Ring - Silvermoon's Alacrity"
-    },
-    {
-      "Slot": "Weapon",
+      "Slot": "Off Hand",
       "Enchant": "Enchant Weapon - Acuity of the Ren'dorei"
     },
     {
-      "Slot": "Helmet",
-      "Enchant": "Enchant Helm - Empowered Hex of Leeching"
+      "Slot": "Helm",
+      "Enchant": "Enchant Helm - Empowered Rune of Avoidance"
     },
     {
       "Slot": "Shoulders",
-      "Enchant": "Enchant Shoulders - Silvermoon's Mending"
+      "Enchant": "Enchant Shoulders - Amirdrassil's Grace"
     },
     {
       "Slot": "Chest",
@@ -51,15 +54,19 @@
     },
     {
       "Slot": "Legs",
-      "Enchant": "Blood Knight's Armor Kit"
+      "Enchant": "Forest Hunter's Armor Kit"
     },
     {
       "Slot": "Boots",
-      "Enchant": "Enchant Boots - Shaladrassil's Roots"
+      "Enchant": "Enchant Boots - Lynx's Dexterity"
+    },
+    {
+      "Slot": "Rings",
+      "Enchant": "Enchant Ring - Eyes of the Eagle"
     }
   ],
   "Consumables": {
-    "Flask": "Flask of the Shattered Sun",
+    "Flask": "Flask of the Blood Knights",
     "Food": "Harandar Celebration",
     "Potion": "Light's Potential",
     "WeaponOil": "Thalassian Phoenix Oil",

@@ -1,13 +1,12 @@
 {
-  "Class": "DEMONHUNTER",
-  "Spec": "Havoc",
+  "Class": "DEATHKNIGHT",
+  "Spec": "Frost",
   "Updated": "2026-04-26",
   "Stats": {
     "Format": "ordered",
     "Ordered": [
-      "Agility",
-      "Critical Strike",
       "Mastery",
+      "Critical Strike",
       "Haste",
       "Versatility"
     ],
@@ -19,7 +18,19 @@
       "Note": ""
     },
     {
+      "Name": "Powerful Eversong Diamond",
+      "Note": ""
+    },
+    {
       "Name": "Flawless Deadly Amethyst",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Masterful Lapis",
+      "Note": ""
+    },
+    {
+      "Name": "Flawless Masterful Peridot",
       "Note": ""
     },
     {
@@ -28,10 +39,6 @@
     }
   ],
   "Enchants": [
-    {
-      "Slot": "Off Hand",
-      "Enchant": "Enchant Weapon - Acuity of the Ren'dorei"
-    },
     {
       "Slot": "Helm",
       "Enchant": "Enchant Helm - Empowered Rune of Avoidance"
@@ -54,14 +61,14 @@
     },
     {
       "Slot": "Rings",
-      "Enchant": "Enchant Ring - Eyes of the Eagle"
+      "Enchant": "Enchant Ring - Zul'jin's Mastery"
     }
   ],
   "Consumables": {
     "Flask": "Flask of the Shattered Sun",
-    "Food": "Silvermoon Parade",
+    "Food": "Harandar Celebration",
     "Potion": "Light's Potential",
     "WeaponOil": "Thalassian Phoenix Oil",
-    "AugRune": "Void-Touched Augment Rune"
+    "AugRune": ""
   }
 }

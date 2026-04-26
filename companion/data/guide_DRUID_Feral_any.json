@@ -1,14 +1,14 @@
 {
-  "Class": "DEMONHUNTER",
-  "Spec": "Havoc",
+  "Class": "DRUID",
+  "Spec": "Feral",
   "Updated": "2026-04-26",
   "Stats": {
     "Format": "ordered",
     "Ordered": [
       "Agility",
-      "Critical Strike",
       "Mastery",
       "Haste",
+      "Critical Strike",
       "Versatility"
     ],
     "Note": ""
@@ -19,19 +19,15 @@
       "Note": ""
     },
     {
-      "Name": "Flawless Deadly Amethyst",
+      "Name": "Flawless Quick Amethyst",
       "Note": ""
     },
     {
-      "Name": "Flawless Masterful Garnet",
+      "Name": "Flawless Masterful Peridot",
       "Note": ""
     }
   ],
   "Enchants": [
-    {
-      "Slot": "Off Hand",
-      "Enchant": "Enchant Weapon - Acuity of the Ren'dorei"
-    },
     {
       "Slot": "Helm",
       "Enchant": "Enchant Helm - Empowered Rune of Avoidance"
@@ -58,7 +54,7 @@
     }
   ],
   "Consumables": {
-    "Flask": "Flask of the Shattered Sun",
+    "Flask": "Flask of the Magisters",
     "Food": "Silvermoon Parade",
     "Potion": "Light's Potential",
     "WeaponOil": "Thalassian Phoenix Oil",
