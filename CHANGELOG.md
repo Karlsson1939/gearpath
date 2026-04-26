@@ -2,6 +2,12 @@
 
 All notable changes to GearPath will be documented in this file.
 
+## [0.4.5] - 2026-04-26
+
+### Fixed
+
+- **Priority tab expand/collapse, finally.** Header content (rank, source name, type badge, item count, score) now stays in the row's header area when the row expands. Previously these elements anchored to the row's vertical center, which moved when row height grew on expand, causing them to drift down into the sub-row area.
+
 ## [0.4.4] - 2026-04-26
 
 ### Fixed

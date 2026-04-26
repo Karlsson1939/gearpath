@@ -170,7 +170,7 @@ function PriorityTab:CreateSourceRow(parent, sourceData, index, yOffset)
 
     -- Rank number
     local rank = row:CreateFontString(nil, "OVERLAY", T.font.emphasis)
-    rank:SetPoint("LEFT", row, "LEFT", T.space.sm, T.space.xs)
+    rank:SetPoint("TOPLEFT", row, "TOPLEFT", T.space.sm, -22)
     rank:SetText(index)
     rank:SetTextColor(unpack(T.color.textMuted))
     rank:SetWidth(20)
@@ -201,12 +201,12 @@ function PriorityTab:CreateSourceRow(parent, sourceData, index, yOffset)
 
     -- Score
     local score = row:CreateFontString(nil, "OVERLAY", T.font.emphasis)
-    score:SetPoint("RIGHT", row, "RIGHT", -10, 4)
+    score:SetPoint("TOPRIGHT", row, "TOPRIGHT", -10, -22)
     score:SetText(string.format("%.1f", sourceData.score))
     score:SetTextColor(unpack(T.color.accentGold))
 
     local scoreLabel = row:CreateFontString(nil, "OVERLAY", T.font.body)
-    scoreLabel:SetPoint("RIGHT", row, "RIGHT", -10, -10)
+    scoreLabel:SetPoint("TOPRIGHT", row, "TOPRIGHT", -10, -36)
     scoreLabel:SetText("score")
     scoreLabel:SetTextColor(unpack(T.color.textMuted))
 
