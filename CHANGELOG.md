@@ -2,6 +2,28 @@
 
 All notable changes to GearPath will be documented in this file.
 
+## [1.0.0] - 2026-04-26
+
+GearPath's first stable release.
+
+The addon ranks content sources by how many BiS upgrades they contain for your spec, advises on Great Vault rewards based on which slots have the most missing or upgradeable BiS items, and surfaces stat priorities, gems, enchants, and consumables curated from Icy Veins.
+
+### Coverage
+
+- All 40 specs in Midnight, including hero-talent-aware data for specs that diverge by hero choice
+- Source classification across Raid, Dungeon, World, Crafted, Delve, and PvP content types
+- Vault recommendations factor in your missing and upgradeable BiS items
+
+### Design
+
+- Class color identity throughout: a 2px outer border on the main panel, plus accents on the spec label, active tab, and BiS completion progress bar
+- Centralized design token system covering colors, fonts, spacing, and borders
+- Status icon legend, tab tooltips, and contextual explanations for the addon's core concepts
+
+### What's next
+
+Future work focuses on automation and validation of the data pipeline, including a snapshot-based test suite to catch when external data sources change in ways that could affect addon correctness.
+
 ## [0.4.6] - 2026-04-26
 
 ### Added
