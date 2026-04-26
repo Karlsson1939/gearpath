@@ -214,13 +214,13 @@ function PriorityTab:CreateSourceRow(parent, sourceData, index, yOffset)
     local chevron = row:CreateTexture(nil, "OVERLAY")
     chevron:SetAtlas("friendslist-categorybutton-arrow-down")
     chevron:SetSize(10, 10)
-    chevron:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -10, T.space.sm)
+    chevron:SetPoint("TOPRIGHT", row, "TOPRIGHT", -10, -(ROW_HEIGHT - T.space.sm))
     chevron:SetVertexColor(unpack(T.color.textMuted))
 
     -- Score bar
     local barBg = row:CreateTexture(nil, "BACKGROUND")
-    barBg:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 36, 5)
-    barBg:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -60, 5)
+    barBg:SetPoint("TOPLEFT", row, "TOPLEFT", 36, -(ROW_HEIGHT - 5))
+    barBg:SetPoint("TOPRIGHT", row, "TOPRIGHT", -60, -(ROW_HEIGHT - 5))
     barBg:SetHeight(3)
     barBg:SetColorTexture(0.2, 0.2, 0.2, 0.8)
 

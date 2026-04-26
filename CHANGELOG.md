@@ -2,6 +2,12 @@
 
 All notable changes to GearPath will be documented in this file.
 
+## [0.4.4] - 2026-04-26
+
+### Fixed
+
+- **Priority tab header element drift on expand.** When expanding a source row, the chevron and score bar were anchored to the row's bottom edge and slid downward into the sub-row area as the row grew. This caused visual overlap between header elements and sub-row content when rows were expanded. Re-anchored to the top edge with fixed Y offsets so they stay in the header zone regardless of row height.
+
 ## [0.4.3] - 2026-04-26
 
 ### Fixed
