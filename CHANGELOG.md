@@ -2,6 +2,14 @@
 
 All notable changes to GearPath will be documented in this file.
 
+## [0.4.3] - 2026-04-26
+
+### Fixed
+
+- **Priority tab sub-row overlap.** Items shown when expanding a source row no longer overflow into rows below. Sub-rows are now anchored to a fixed point inside their parent row instead of a moving anchor that shifted on expand.
+
+- **Chevron rendering on Priority tab rows.** The expand/collapse indicator in each row's bottom-right corner was rendering as an empty box because the Unicode triangle characters (▼ ▲) aren't supported by the addon's body font. Replaced with WoW atlas chevron textures that render correctly and indicate expand/collapse direction.
+
 ## [0.4.2] - 2026-04-26
 
 ### Fixed

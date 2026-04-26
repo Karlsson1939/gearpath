@@ -211,10 +211,11 @@ function PriorityTab:CreateSourceRow(parent, sourceData, index, yOffset)
     scoreLabel:SetTextColor(unpack(T.color.textMuted))
 
     -- Chevron
-    local chevron = row:CreateFontString(nil, "OVERLAY", T.font.body)
+    local chevron = row:CreateTexture(nil, "OVERLAY")
+    chevron:SetAtlas("friendslist-categorybutton-arrow-down")
+    chevron:SetSize(10, 10)
     chevron:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -10, T.space.sm)
-    chevron:SetText("▼")
-    chevron:SetTextColor(unpack(T.color.textMuted))
+    chevron:SetVertexColor(unpack(T.color.textMuted))
 
     -- Score bar
     local barBg = row:CreateTexture(nil, "BACKGROUND")
@@ -235,8 +236,8 @@ function PriorityTab:CreateSourceRow(parent, sourceData, index, yOffset)
     local function createItemRows()
         for j, item in ipairs(sourceData.items) do
             local itemRow = CreateFrame("Frame", nil, row, "BackdropTemplate")
-            itemRow:SetPoint("TOPLEFT", row, "BOTTOMLEFT", 0, -((j - 1) * ITEM_HEIGHT))
-            itemRow:SetPoint("TOPRIGHT", row, "BOTTOMRIGHT", 0, -((j - 1) * ITEM_HEIGHT))
+            itemRow:SetPoint("TOPLEFT", row, "TOPLEFT", 0, -(ROW_HEIGHT + (j - 1) * ITEM_HEIGHT))
+            itemRow:SetPoint("TOPRIGHT", row, "TOPRIGHT", 0, -(ROW_HEIGHT + (j - 1) * ITEM_HEIGHT))
             itemRow:SetHeight(ITEM_HEIGHT)
             itemRow:SetBackdrop({
                 bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
@@ -287,14 +288,14 @@ function PriorityTab:CreateSourceRow(parent, sourceData, index, yOffset)
                 itemRow:Show()
             end
             row:SetHeight(ROW_HEIGHT + #expandedItems * ITEM_HEIGHT)
-            chevron:SetText("▲")
+            chevron:SetAtlas("friendslist-categorybutton-arrow-up")
             expanded = true
         else
             for _, itemRow in ipairs(expandedItems) do
                 itemRow:Hide()
             end
             row:SetHeight(ROW_HEIGHT)
-            chevron:SetText("▼")
+            chevron:SetAtlas("friendslist-categorybutton-arrow-down")
             expanded = false
         end
         PriorityTab:RepositionRows()
