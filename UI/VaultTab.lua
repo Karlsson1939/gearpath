@@ -167,8 +167,11 @@ function VaultTab:DrawActivityRow(child, typeID, slots, yOffset)
             barFill:SetColorTexture(color[1] * 0.5, color[2] * 0.5, color[3] * 0.5, 0.7)
         end
         -- Width set via OnSizeChanged to get real pixel width
-        barBg:SetScript("OnSizeChanged", function(self, w, h)
-            barFill:SetWidth(math.max(1, w * pct))
+        row:SetScript("OnSizeChanged", function()
+            local w = barBg:GetWidth()
+            if w and w > 0 then
+                barFill:SetWidth(math.max(1, w * pct))
+            end
         end)
 
         -- Progress text

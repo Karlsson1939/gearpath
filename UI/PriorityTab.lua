@@ -234,7 +234,7 @@ function PriorityTab:CreateSourceRow(parent, sourceData, index, yOffset)
     -- Item rows creation (lazy, on first expand)
     local function createItemRows()
         for j, item in ipairs(sourceData.items) do
-            local itemRow = CreateFrame("Frame", nil, parent, "BackdropTemplate")
+            local itemRow = CreateFrame("Frame", nil, row, "BackdropTemplate")
             itemRow:SetPoint("TOPLEFT", row, "BOTTOMLEFT", 0, -((j - 1) * ITEM_HEIGHT))
             itemRow:SetPoint("TOPRIGHT", row, "BOTTOMRIGHT", 0, -((j - 1) * ITEM_HEIGHT))
             itemRow:SetHeight(ITEM_HEIGHT)

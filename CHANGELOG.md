@@ -2,6 +2,18 @@
 
 All notable changes to GearPath will be documented in this file.
 
+## [0.4.1] - 2026-04-26
+
+### Fixed
+
+- **Vault tab crash.** Opening the Vault tab no longer triggers a Lua error. The progress bar resize handler was incorrectly attached to a Texture object; moved to the parent Frame which supports the script.
+
+- **Priority tab sub-row overlap.** Expanded sub-row content no longer bleeds through into other source rows. Sub-rows are now correctly parented to their owning source row, so they hide and refresh together.
+
+### Added
+
+- **Addon icon in the AddOns list.** GearPath now shows the gear icon instead of the default red questionmark.
+
 ## [0.4.0] - 2026-04-26
 
 ### Added
