@@ -2,6 +2,12 @@
 
 All notable changes to GearPath will be documented in this file.
 
+## [0.4.2] - 2026-04-26
+
+### Fixed
+
+- **Raid items correctly classified.** Items from The Voidspire, The Dreamrift, and March on Quel'Danas now show as "Raid" sources instead of "Dungeon" — they were previously miscategorized due to a Blizzard journal-instance API quirk. Fixed by overriding the instance type at scrape and generate time.
+
 ## [0.4.1] - 2026-04-26
 
 ### Fixed

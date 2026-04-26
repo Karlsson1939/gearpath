@@ -146,6 +146,17 @@ var season1Instances = []string{
 	"March on Quel'Danas",
 }
 
+// Instance names where the Blizzard journal-instance API returns
+// "DUNGEON" but the content is actually a raid. Override here so
+// the scraper produces correct sourceType in the generated data.
+// If/when Blizzard fixes the API classification, this override
+// becomes redundant but not harmful.
+var raidInstanceOverrides = map[string]bool{
+	"The Voidspire":       true,
+	"The Dreamrift":       true,
+	"March on Quel'Danas": true,
+}
+
 // ============================================================
 // Icy Veins URL slugs
 // ============================================================
@@ -638,6 +649,8 @@ func (c *BlizzardClient) loadOrBuildSourceMap() error {
 
 		sourceType := "DUNGEON"
 		if instance.InstanceType.Type == "RAID" {
+			sourceType = "RAID"
+		} else if raidInstanceOverrides[instance.Name] {
 			sourceType = "RAID"
 		}
 
@@ -2537,6 +2550,12 @@ func generate() error {
 		spec, err := loadSpec(file)
 		if err != nil {
 			return fmt.Errorf("error parsing %s: %w", file, err)
+		}
+		// Apply raid instance overrides to fix Blizzard API misclassification
+		for i := range spec.Items {
+			if raidInstanceOverrides[spec.Items[i].SourceName] && spec.Items[i].SourceType == "DUNGEON" {
+				spec.Items[i].SourceType = "RAID"
+			}
 		}
 		if len(spec.Items) == 0 {
 			fmt.Printf("  Skipping (empty): %s %s [%s]\n", spec.Class, spec.Spec, spec.HeroKey)
