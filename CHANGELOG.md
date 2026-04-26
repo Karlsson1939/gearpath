@@ -2,6 +2,42 @@
 
 All notable changes to GearPath will be documented in this file.
 
+## [0.4.0] - 2026-04-26
+
+### Added
+
+- **Design token system.** A central Theme module defines colors, fonts, spacing, and borders used consistently across the addon. The main frame is now framed by a 2px outer border in your class color, and class color also accents the spec label, active tab, and BiS completion progress bar.
+
+- **Status icon legend on the BiS List tab.** A row at the top of the tab explains what the ✓ B ↑ ✗ icons mean.
+
+- **Tab button tooltips.** Hovering a tab in the main panel shows a one-line description of what the tab contains.
+
+- **Score explanation on the Priority tab.** A muted line below the BiS completion bar describes how sources are ranked.
+
+- **Data source attribution on the Stats tab.** A footer credits Icy Veins as the source of stat priorities, gems, enchants, and consumables.
+
+### Fixed
+
+- **Priority tab expand/collapse.** Clicking a source row to expand it no longer causes layout overlap or fails to collapse on a second click.
+
+- **Vault tab auto-refresh.** The Vault tab now updates in real time when weekly progress changes (e.g., after completing a Mythic+ key), instead of only refreshing when the tab is reopened.
+
+- **No more chat spam on detection.** The addon no longer prints "[Detection] Detected: ..." messages on login, spec change, or zone-in.
+
+- **BiS List empty state.** When no BiS data is available for the current spec, the tab now shows a clear message instead of rendering blank.
+
+- **Source type names display correctly.** "Dungeon", "Raid", "PvP" etc. instead of raw enum strings.
+
+- **Section headers are consistently title-cased** across all tabs.
+
+- **`/gp` help text now describes each command.**
+
+- **Detection-in-progress message** now suggests `/reload` if detection doesn't complete naturally.
+
+### Removed
+
+- **Config stub.** The Config.lua placeholder, the right-click handler on the minimap button, the `/gp config` slash command, and the misleading "Right-click for settings" tooltip line have all been removed. They referenced functionality that didn't exist. A real settings UI is planned for a future release.
+
 ## [0.3.1] - 2026-04-26
 
 ### Added
