@@ -42,7 +42,7 @@ function GearPath:OnInitialize()
     self:RegisterChatCommand("gp", "SlashCommand")
     self:RegisterChatCommand("gearpath", "SlashCommand")
 
-    self:Print("GearPath loaded. Type /gp for options.")
+    self:Print("GearPath loaded. Type /gp to open.")
 end
 
 function GearPath:OnEnable()
@@ -71,6 +71,9 @@ end
 -- ============================================================
 
 function GearPath:OnPlayerEnteringWorld()
+    if GearPath.Theme then
+        GearPath.Theme:Init()
+    end
     self:DetectAndLoad()
 end
 
@@ -260,10 +263,6 @@ function GearPath:SlashCommand(input)
         if GearPath.VaultAdvisor then
             GearPath.VaultAdvisor:PrintSummary()
         end
-    elseif input == "config" then
-        if GearPath.Config then
-            GearPath.Config:Open()
-        end
     elseif input == "reset" then
         if GearPath.MainFrame then
             GearPath.MainFrame:ResetPosition()
@@ -281,6 +280,12 @@ function GearPath:SlashCommand(input)
             end
         end
     else
-        self:Print("Commands: /gp | /gp priority | /gp bis | /gp vault | /gp config | /gp status | /gp reset")
+        self:Print("GearPath commands:")
+        self:Print("  /gp           Toggle the main panel")
+        self:Print("  /gp priority  Print top priority sources to chat")
+        self:Print("  /gp bis       Print equipped gear summary to chat")
+        self:Print("  /gp vault     Print vault summary to chat")
+        self:Print("  /gp status    Show current detection state")
+        self:Print("  /gp reset     Reset panel position")
     end
 end

@@ -10,6 +10,7 @@ local activeTab = 1
 function MainFrame:Create()
     if frame then return end
 
+    local T  = GearPath.Theme
     local db = GearPath.db.profile.ui
 
     -- Main frame
@@ -36,22 +37,24 @@ function MainFrame:Create()
 
     frame:SetBackdrop({
         bgFile   = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
-        edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border-Dark",
-        tile     = true, tileSize = 32, edgeSize = 32,
-        insets   = { left = 8, right = 8, top = 8, bottom = 8 },
+        edgeFile = T.border.frame.edgeFile,
+        tile     = true, tileSize = 32, edgeSize = T.border.frame.edgeSize,
+        insets   = { left = T.border.frame.insets[1], right = T.border.frame.insets[2],
+                     top = T.border.frame.insets[3], bottom = T.border.frame.insets[4] },
     })
+    frame:SetBackdropBorderColor(unpack(T.color.classAccent))
 
     table.insert(UISpecialFrames, "GearPathMainFrame")
 
     -- Title
-    local title = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
-    title:SetPoint("TOPLEFT", frame, "TOPLEFT", 16, -14)
+    local title = frame:CreateFontString(nil, "OVERLAY", T.font.title)
+    title:SetPoint("TOPLEFT", frame, "TOPLEFT", T.space.lg, -14)
     title:SetText("GearPath")
 
     -- Spec label
-    frame.specLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    frame.specLabel:SetPoint("LEFT", title, "RIGHT", 8, 0)
-    frame.specLabel:SetTextColor(1.0, 0.82, 0.0)
+    frame.specLabel = frame:CreateFontString(nil, "OVERLAY", T.font.body)
+    frame.specLabel:SetPoint("LEFT", title, "RIGHT", T.space.sm, 0)
+    frame.specLabel:SetTextColor(unpack(T.color.classAccent))
     frame.specLabel:SetText("")
 
     -- Close button
@@ -61,21 +64,27 @@ function MainFrame:Create()
 
     -- Divider line under title
     local divider = frame:CreateTexture(nil, "ARTWORK")
-    divider:SetColorTexture(1, 1, 1, 0.08)
-    divider:SetPoint("TOPLEFT", frame, "TOPLEFT", 12, -34)
-    divider:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -12, -34)
+    divider:SetColorTexture(unpack(T.color.whiteDivider))
+    divider:SetPoint("TOPLEFT", frame, "TOPLEFT", T.space.md, -34)
+    divider:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -T.space.md, -34)
     divider:SetHeight(1)
 
     -- Tab buttons
     frame.tabs = {}
     local tabLabels = { "Priority", "BiS List", "Stats", "Vault" }
+    local tabDescriptions = {
+        "Ranked content sources for your missing BiS gear",
+        "Best in Slot items with equipped/upgrade status",
+        "Stat priorities, gems, enchants, and consumables",
+        "Weekly Great Vault progress and recommendations",
+    }
     for i, label in ipairs(tabLabels) do
         local tab = CreateFrame("Button", "GearPathTab" .. i, frame)
-        tab:SetSize(80, 24)
+        tab:SetSize(T.size.tabButtonW, T.size.tabButtonH)
         tab:SetID(i)
 
         if i == 1 then
-            tab:SetPoint("TOPLEFT", frame, "TOPLEFT", 12, -38)
+            tab:SetPoint("TOPLEFT", frame, "TOPLEFT", T.space.md, -38)
         else
             tab:SetPoint("LEFT", frame.tabs[i-1], "RIGHT", 2, 0)
         end
@@ -85,7 +94,7 @@ function MainFrame:Create()
         tabBg:SetColorTexture(0, 0, 0, 0)
         tab.bg = tabBg
 
-        local tabText = tab:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        local tabText = tab:CreateFontString(nil, "OVERLAY", T.font.body)
         tabText:SetAllPoints()
         tabText:SetText(label)
         tab.text = tabText
@@ -96,14 +105,18 @@ function MainFrame:Create()
 
         tab:SetScript("OnEnter", function(btn)
             if btn:GetID() ~= activeTab then
-                btn.bg:SetColorTexture(1, 1, 1, 0.05)
+                btn.bg:SetColorTexture(unpack(T.color.whiteSoft))
             end
+            GameTooltip:SetOwner(btn, "ANCHOR_BOTTOM")
+            GameTooltip:AddLine(tabDescriptions[btn:GetID()], 1, 1, 1)
+            GameTooltip:Show()
         end)
 
         tab:SetScript("OnLeave", function(btn)
             if btn:GetID() ~= activeTab then
                 btn.bg:SetColorTexture(0, 0, 0, 0)
             end
+            GameTooltip:Hide()
         end)
 
         frame.tabs[i] = tab
@@ -111,15 +124,15 @@ function MainFrame:Create()
 
     -- Tab divider
     local tabDivider = frame:CreateTexture(nil, "ARTWORK")
-    tabDivider:SetColorTexture(1, 1, 1, 0.08)
-    tabDivider:SetPoint("TOPLEFT", frame, "TOPLEFT", 12, -64)
-    tabDivider:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -12, -64)
+    tabDivider:SetColorTexture(unpack(T.color.whiteDivider))
+    tabDivider:SetPoint("TOPLEFT", frame, "TOPLEFT", T.space.md, -64)
+    tabDivider:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -T.space.md, -64)
     tabDivider:SetHeight(1)
 
     -- Content area
     frame.content = CreateFrame("Frame", "GearPathContent", frame)
-    frame.content:SetPoint("TOPLEFT", frame, "TOPLEFT", 12, -70)
-    frame.content:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -12, 12)
+    frame.content:SetPoint("TOPLEFT", frame, "TOPLEFT", T.space.md, -70)
+    frame.content:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -T.space.md, T.space.md)
 
     frame:Hide()
     self:ShowTab(GearPath.db.profile.ui.activeTab or 1)
@@ -127,15 +140,16 @@ end
 
 function MainFrame:ShowTab(tabIndex)
     if not frame then return end
+    local T = GearPath.Theme
     activeTab = tabIndex
     GearPath.db.profile.ui.activeTab = tabIndex
 
     for i, tab in ipairs(frame.tabs) do
         if i == tabIndex then
-            tab.text:SetTextColor(1.0, 0.82, 0.0)
-            tab.bg:SetColorTexture(1, 0.82, 0.0, 0.1)
+            tab.text:SetTextColor(unpack(T.color.classAccent))
+            tab.bg:SetColorTexture(unpack(T.color.classAccentSoft))
         else
-            tab.text:SetTextColor(0.7, 0.7, 0.7)
+            tab.text:SetTextColor(unpack(T.color.textMuted))
             tab.bg:SetColorTexture(0, 0, 0, 0)
         end
     end

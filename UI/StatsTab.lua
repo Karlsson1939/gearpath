@@ -11,38 +11,40 @@ local container = nil
 -- ============================================================
 
 local function AddHeader(child, yOffset, text)
-    local header = child:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    header:SetPoint("TOPLEFT", child, "TOPLEFT", 4, yOffset)
+    local T = GearPath.Theme
+    local header = child:CreateFontString(nil, "OVERLAY", T.font.label)
+    header:SetPoint("TOPLEFT", child, "TOPLEFT", T.space.xs, yOffset)
     header:SetText(text)
-    header:SetTextColor(1.0, 0.82, 0.0)
-    return yOffset - 20
+    header:SetTextColor(unpack(T.color.accentGold))
+    return yOffset - T.size.rowHeightSmall
 end
 
 local function AddRow(child, yOffset, label, value, index)
+    local T = GearPath.Theme
     local row = CreateFrame("Frame", nil, child)
     row:SetPoint("TOPLEFT", child, "TOPLEFT", 0, yOffset)
     row:SetPoint("TOPRIGHT", child, "TOPRIGHT", 0, yOffset)
-    row:SetHeight(20)
+    row:SetHeight(T.size.rowHeightSmall)
 
     if index and index % 2 == 0 then
         local bg = row:CreateTexture(nil, "BACKGROUND")
         bg:SetAllPoints()
-        bg:SetColorTexture(1, 1, 1, 0.03)
+        bg:SetColorTexture(unpack(T.color.whiteFaint))
     end
 
-    local labelText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    labelText:SetPoint("LEFT", row, "LEFT", 8, 0)
+    local labelText = row:CreateFontString(nil, "OVERLAY", T.font.body)
+    labelText:SetPoint("LEFT", row, "LEFT", T.space.sm, 0)
     labelText:SetText(label)
-    labelText:SetTextColor(0.6, 0.6, 0.6)
+    labelText:SetTextColor(unpack(T.color.textMuted))
     labelText:SetWidth(90)
 
-    local valueText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    valueText:SetPoint("LEFT", labelText, "RIGHT", 4, 0)
-    valueText:SetPoint("RIGHT", row, "RIGHT", -4, 0)
+    local valueText = row:CreateFontString(nil, "OVERLAY", T.font.bodyBright)
+    valueText:SetPoint("LEFT", labelText, "RIGHT", T.space.xs, 0)
+    valueText:SetPoint("RIGHT", row, "RIGHT", -T.space.xs, 0)
     valueText:SetText(value)
     valueText:SetJustifyH("LEFT")
 
-    return yOffset - 20
+    return yOffset - T.size.rowHeightSmall
 end
 
 -- ============================================================
@@ -75,23 +77,25 @@ end
 function StatsTab:Refresh()
     if not container or not container:IsShown() then return end
 
+    local T = GearPath.Theme
+
     local child = container.child
     for _, c in pairs({ child:GetChildren() }) do c:Hide() end
     for _, r in pairs({ child:GetRegions() }) do r:Hide() end
 
     local guide = GearPath:GetGuideForCurrentSpec()
     if not guide then
-        local msg = child:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+        local msg = child:CreateFontString(nil, "OVERLAY", T.font.label)
         msg:SetPoint("TOP", child, "TOP", 0, -40)
         msg:SetWidth(child:GetWidth() - 20)
         msg:SetText("No guide data available for this spec.\nSelect a hero talent in-game to see recommendations.")
-        msg:SetTextColor(0.5, 0.5, 0.5)
+        msg:SetTextColor(unpack(T.color.textMuted))
         msg:SetJustifyH("CENTER")
         child:SetHeight(100)
         return
     end
 
-    local y = -4
+    local y = -T.space.xs
 
     -- Stat Priority
     y = AddHeader(child, y, "Stat Priority")
@@ -101,33 +105,33 @@ function StatsTab:Refresh()
             local row = CreateFrame("Frame", nil, child)
             row:SetPoint("TOPLEFT", child, "TOPLEFT", 0, y)
             row:SetPoint("TOPRIGHT", child, "TOPRIGHT", 0, y)
-            row:SetHeight(20)
+            row:SetHeight(T.size.rowHeightSmall)
 
             if i % 2 == 0 then
                 local bg = row:CreateTexture(nil, "BACKGROUND")
                 bg:SetAllPoints()
-                bg:SetColorTexture(1, 1, 1, 0.03)
+                bg:SetColorTexture(unpack(T.color.whiteFaint))
             end
 
-            local numText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-            numText:SetPoint("LEFT", row, "LEFT", 8, 0)
+            local numText = row:CreateFontString(nil, "OVERLAY", T.font.body)
+            numText:SetPoint("LEFT", row, "LEFT", T.space.sm, 0)
             numText:SetText(i .. ".")
-            numText:SetTextColor(0.5, 0.5, 0.5)
+            numText:SetTextColor(unpack(T.color.textMuted))
             numText:SetWidth(20)
 
-            local statText = row:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-            statText:SetPoint("LEFT", numText, "RIGHT", 4, 0)
+            local statText = row:CreateFontString(nil, "OVERLAY", T.font.bodyBright)
+            statText:SetPoint("LEFT", numText, "RIGHT", T.space.xs, 0)
             statText:SetText(stat)
 
-            y = y - 20
+            y = y - T.size.rowHeightSmall
         end
     end
     if stats and stats.note and stats.note ~= "" then
-        local note = child:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        note:SetPoint("TOPLEFT", child, "TOPLEFT", 8, y - 2)
+        local note = child:CreateFontString(nil, "OVERLAY", T.font.body)
+        note:SetPoint("TOPLEFT", child, "TOPLEFT", T.space.sm, y - 2)
         note:SetWidth(child:GetWidth() - 20)
         note:SetText(stats.note)
-        note:SetTextColor(0.6, 0.6, 0.6)
+        note:SetTextColor(unpack(T.color.textMuted))
         note:SetJustifyH("LEFT")
         note:SetWordWrap(true)
         y = y - (note:GetStringHeight() + 6)
@@ -178,6 +182,13 @@ function StatsTab:Refresh()
             addCons("Aug. Rune", cons.augRune)
         end
     end
+
+    y = y - 10
+    local attribution = child:CreateFontString(nil, "OVERLAY", T.font.body)
+    attribution:SetPoint("TOPLEFT", child, "TOPLEFT", T.space.xs, y)
+    attribution:SetText("Data sourced from Icy Veins.")
+    attribution:SetTextColor(unpack(T.color.textMuted))
+    y = y - T.size.rowHeightSmall
 
     child:SetHeight(math.abs(y) + 10)
 end

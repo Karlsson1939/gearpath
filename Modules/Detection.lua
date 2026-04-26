@@ -126,6 +126,6 @@ function Detection:GetNotReadyMessage()
     elseif reason == "no_hero_talent" then
         return "Select a hero talent tree in your talent window to see your BiS priorities."
     else
-        return "GearPath is still detecting your character."
+        return "GearPath is still detecting your character. If this persists, try /reload."
     end
 end

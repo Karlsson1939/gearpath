@@ -7,13 +7,22 @@ local PriorityTab = GearPath.PriorityTab
 local container = nil
 local rows = {}
 
-local SOURCE_TYPE_COLORS = {
-    DUNGEON = { 0.4, 0.8, 1.0 },
-    RAID    = { 1.0, 0.5, 0.2 },
-    CRAFTED = { 0.5, 1.0, 0.5 },
-    WORLD   = { 1.0, 0.9, 0.3 },
-    DELVE   = { 0.8, 0.5, 1.0 },
-    PVP     = { 1.0, 0.3, 0.3 },
+local SOURCE_COLOR_KEYS = {
+    DUNGEON = "sourceDungeon",
+    RAID    = "sourceRaid",
+    CRAFTED = "sourceCrafted",
+    WORLD   = "sourceWorld",
+    DELVE   = "sourceDelve",
+    PVP     = "sourcePvP",
+}
+
+local SOURCE_TYPE_DISPLAY = {
+    DUNGEON = "Dungeon",
+    RAID    = "Raid",
+    CRAFTED = "Crafted",
+    WORLD   = "World",
+    DELVE   = "Delve",
+    PVP     = "PvP",
 }
 
 function PriorityTab:Show(parent)
@@ -62,34 +71,44 @@ function PriorityTab:Refresh()
 end
 
 function PriorityTab:DrawProgressBar()
+    local T = GearPath.Theme
+
     if container.progressBg then
         container.progressBg:Show()
         container.progressFill:Show()
         container.progressLabel:Show()
         container.progressCount:Show()
+        container.scoreExplanation:Show()
     else
         local bg = container:CreateTexture(nil, "BACKGROUND")
-        bg:SetPoint("TOPLEFT", container, "TOPLEFT", 0, -4)
-        bg:SetPoint("TOPRIGHT", container, "TOPRIGHT", 0, -4)
-        bg:SetHeight(14)
-        bg:SetColorTexture(0, 0, 0, 0.4)
+        bg:SetPoint("TOPLEFT", container, "TOPLEFT", 0, -T.space.xs)
+        bg:SetPoint("TOPRIGHT", container, "TOPRIGHT", 0, -T.space.xs)
+        bg:SetHeight(T.size.barHeight)
+        bg:SetColorTexture(unpack(T.color.bgTrack))
         container.progressBg = bg
 
         local fill = container:CreateTexture(nil, "ARTWORK")
         fill:SetPoint("TOPLEFT", bg, "TOPLEFT", 1, -1)
-        fill:SetHeight(12)
-        fill:SetColorTexture(1.0, 0.65, 0.0, 0.7)
+        fill:SetHeight(T.size.barHeight - 2)
+        local cc = T.color.classAccent
+        fill:SetColorTexture(cc[1], cc[2], cc[3], 0.7)
         container.progressFill = fill
 
-        local label = container:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        label:SetPoint("LEFT", bg, "LEFT", 4, 0)
+        local label = container:CreateFontString(nil, "OVERLAY", T.font.body)
+        label:SetPoint("LEFT", bg, "LEFT", T.space.xs, 0)
         label:SetText("BiS completion")
-        label:SetTextColor(0.9, 0.9, 0.9)
+        label:SetTextColor(unpack(T.color.textSecondary))
         container.progressLabel = label
 
-        local count = container:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        count:SetPoint("RIGHT", bg, "RIGHT", -4, 0)
+        local count = container:CreateFontString(nil, "OVERLAY", T.font.body)
+        count:SetPoint("RIGHT", bg, "RIGHT", -T.space.xs, 0)
         container.progressCount = count
+
+        local explanation = container:CreateFontString(nil, "OVERLAY", T.font.body)
+        explanation:SetPoint("TOPLEFT", bg, "BOTTOMLEFT", T.space.xs, -2)
+        explanation:SetText("Sources ranked by missing BiS item priorities.")
+        explanation:SetTextColor(unpack(T.color.textMuted))
+        container.scoreExplanation = explanation
     end
 
     local total    = 0
@@ -113,7 +132,7 @@ function PriorityTab:DrawProgressBar()
     local width = container:GetWidth() - 2
     container.progressFill:SetWidth(math.max(1, width * pct))
     container.progressCount:SetText(string.format("%d / %d slots", equipped, total))
-    container.progressCount:SetTextColor(1.0, 0.82, 0.0)
+    container.progressCount:SetTextColor(unpack(T.color.accentGold))
 end
 
 function PriorityTab:RepositionRows()
@@ -128,8 +147,9 @@ function PriorityTab:RepositionRows()
 end
 
 function PriorityTab:CreateSourceRow(parent, sourceData, index, yOffset)
-    local ROW_HEIGHT  = 52
-    local ITEM_HEIGHT = 20
+    local T = GearPath.Theme
+    local ROW_HEIGHT  = T.size.rowHeightLarge
+    local ITEM_HEIGHT = T.size.rowHeightSmall
     local expandedItems = {}
     local expanded    = false
 
@@ -139,19 +159,20 @@ function PriorityTab:CreateSourceRow(parent, sourceData, index, yOffset)
     row:SetHeight(ROW_HEIGHT)
     row:SetBackdrop({
         bgFile   = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        tile     = true, tileSize = 16, edgeSize = 12,
-        insets   = { left = 3, right = 3, top = 3, bottom = 3 },
+        edgeFile = T.border.row.edgeFile,
+        tile     = true, tileSize = 16, edgeSize = T.border.row.edgeSize,
+        insets   = { left = T.border.row.insets[1], right = T.border.row.insets[2],
+                     top = T.border.row.insets[3], bottom = T.border.row.insets[4] },
     })
-    row:SetBackdropColor(0.08, 0.08, 0.12, 0.9)
+    row:SetBackdropColor(unpack(T.color.bgSurface))
 
-    local color = SOURCE_TYPE_COLORS[sourceData.sourceType] or { 1, 1, 1 }
+    local color = T.color[SOURCE_COLOR_KEYS[sourceData.sourceType]] or T.color.textPrimary
 
     -- Rank number
-    local rank = row:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    rank:SetPoint("LEFT", row, "LEFT", 8, 4)
+    local rank = row:CreateFontString(nil, "OVERLAY", T.font.emphasis)
+    rank:SetPoint("LEFT", row, "LEFT", T.space.sm, T.space.xs)
     rank:SetText(index)
-    rank:SetTextColor(0.5, 0.5, 0.5)
+    rank:SetTextColor(unpack(T.color.textMuted))
     rank:SetWidth(20)
 
     -- Color tag
@@ -161,39 +182,39 @@ function PriorityTab:CreateSourceRow(parent, sourceData, index, yOffset)
     tag:SetColorTexture(color[1], color[2], color[3], 0.9)
 
     -- Source name
-    local name = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    name:SetPoint("TOPLEFT", tag, "TOPRIGHT", 8, -4)
+    local name = row:CreateFontString(nil, "OVERLAY", T.font.label)
+    name:SetPoint("TOPLEFT", tag, "TOPRIGHT", T.space.sm, -T.space.xs)
     name:SetText(sourceData.sourceName)
-    name:SetTextColor(1, 1, 1)
+    name:SetTextColor(unpack(T.color.textPrimary))
 
     -- Type badge
-    local typeLabel = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    local typeLabel = row:CreateFontString(nil, "OVERLAY", T.font.body)
     typeLabel:SetPoint("LEFT", name, "RIGHT", 6, 0)
-    typeLabel:SetText(sourceData.sourceType)
+    typeLabel:SetText(SOURCE_TYPE_DISPLAY[sourceData.sourceType] or sourceData.sourceType)
     typeLabel:SetTextColor(color[1], color[2], color[3])
 
     -- Item count
-    local itemCount = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    itemCount:SetPoint("BOTTOMLEFT", tag, "BOTTOMRIGHT", 8, 8)
+    local itemCount = row:CreateFontString(nil, "OVERLAY", T.font.body)
+    itemCount:SetPoint("BOTTOMLEFT", tag, "BOTTOMRIGHT", T.space.sm, T.space.sm)
     itemCount:SetText(string.format("%d item(s) missing", #sourceData.items))
-    itemCount:SetTextColor(0.7, 0.7, 0.7)
+    itemCount:SetTextColor(unpack(T.color.textMuted))
 
     -- Score
-    local score = row:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    local score = row:CreateFontString(nil, "OVERLAY", T.font.emphasis)
     score:SetPoint("RIGHT", row, "RIGHT", -10, 4)
     score:SetText(string.format("%.1f", sourceData.score))
-    score:SetTextColor(1.0, 0.82, 0.0)
+    score:SetTextColor(unpack(T.color.accentGold))
 
-    local scoreLabel = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    local scoreLabel = row:CreateFontString(nil, "OVERLAY", T.font.body)
     scoreLabel:SetPoint("RIGHT", row, "RIGHT", -10, -10)
     scoreLabel:SetText("score")
-    scoreLabel:SetTextColor(0.5, 0.5, 0.5)
+    scoreLabel:SetTextColor(unpack(T.color.textMuted))
 
     -- Chevron
-    local chevron = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    chevron:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -10, 8)
+    local chevron = row:CreateFontString(nil, "OVERLAY", T.font.body)
+    chevron:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -10, T.space.sm)
     chevron:SetText("▼")
-    chevron:SetTextColor(0.5, 0.5, 0.5)
+    chevron:SetTextColor(unpack(T.color.textMuted))
 
     -- Score bar
     local barBg = row:CreateTexture(nil, "BACKGROUND")
@@ -220,32 +241,35 @@ function PriorityTab:CreateSourceRow(parent, sourceData, index, yOffset)
             itemRow:SetBackdrop({
                 bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
                 tile   = true, tileSize = 16,
-                insets = { left = 3, right = 3, top = 3, bottom = 3 },
+                insets = { left = T.border.rowFlat.insets[1], right = T.border.rowFlat.insets[2],
+                           top = T.border.rowFlat.insets[3], bottom = T.border.rowFlat.insets[4] },
             })
-            itemRow:SetBackdropColor(0.05, 0.05, 0.08, 0.95)
+            itemRow:SetBackdropColor(unpack(T.color.bgBase))
 
             -- Status dot
             local dot = itemRow:CreateTexture(nil, "ARTWORK")
             dot:SetSize(6, 6)
             dot:SetPoint("LEFT", itemRow, "LEFT", 36, 0)
             if item.status == "MISSING" then
-                dot:SetColorTexture(1.0, 0.3, 0.3, 1)
+                local sm = T.color.statusMissing
+                dot:SetColorTexture(sm[1], sm[2], sm[3], 1)
             else
-                dot:SetColorTexture(1.0, 0.82, 0.0, 1)
+                local su = T.color.statusUpgradeable
+                dot:SetColorTexture(su[1], su[2], su[3], 1)
             end
 
             -- Item name
-            local itemName = itemRow:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+            local itemName = itemRow:CreateFontString(nil, "OVERLAY", T.font.body)
             itemName:SetPoint("LEFT", dot, "RIGHT", 6, 0)
             itemName:SetText(item.bisItem.itemName)
-            itemName:SetTextColor(0.9, 0.9, 0.9)
+            itemName:SetTextColor(unpack(T.color.textSecondary))
 
             -- Boss name
             if item.bisItem.bossName then
-                local bossLabel = itemRow:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+                local bossLabel = itemRow:CreateFontString(nil, "OVERLAY", T.font.body)
                 bossLabel:SetPoint("RIGHT", itemRow, "RIGHT", -6, 0)
                 bossLabel:SetText(item.bisItem.bossName)
-                bossLabel:SetTextColor(0.5, 0.5, 0.5)
+                bossLabel:SetTextColor(unpack(T.color.textMuted))
             end
 
             itemRow:Hide()
@@ -277,24 +301,25 @@ function PriorityTab:CreateSourceRow(parent, sourceData, index, yOffset)
     end)
 
     row:SetScript("OnEnter", function(r)
-        r:SetBackdropColor(0.12, 0.12, 0.18, 0.95)
+        r:SetBackdropColor(unpack(T.color.bgElevated))
     end)
     row:SetScript("OnLeave", function(r)
-        r:SetBackdropColor(0.08, 0.08, 0.12, 0.9)
+        r:SetBackdropColor(unpack(T.color.bgSurface))
     end)
 
     return row
 end
 
 function PriorityTab:ShowEmptyState()
+    local T = GearPath.Theme
     if container.emptyLabel then
         container.emptyLabel:Show()
         return
     end
-    local label = container:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    local label = container:CreateFontString(nil, "OVERLAY", T.font.label)
     label:SetPoint("CENTER", container, "CENTER", 0, 0)
     label:SetText("No missing BiS items!\nYou're fully geared for this spec.")
-    label:SetTextColor(0.3, 1.0, 0.3)
+    label:SetTextColor(unpack(T.color.statusEquipped))
     label:SetJustifyH("CENTER")
     container.emptyLabel = label
 end

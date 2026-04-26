@@ -14,42 +14,37 @@ function MinimapButton:Initialize()
         label = "GearPath",
 
         OnClick = function(_, button)
-            if button == "LeftButton" then
-                if GearPath.MainFrame then
-                    GearPath.MainFrame:Toggle()
-                end
-            elseif button == "RightButton" then
-                if GearPath.Config then
-                    GearPath.Config:Open()
-                end
+            if button == "LeftButton" and GearPath.MainFrame then
+                GearPath.MainFrame:Toggle()
             end
         end,
 
         OnTooltipShow = function(tooltip)
+            local T = GearPath.Theme
+
             tooltip:AddLine("GearPath")
             tooltip:AddLine(" ")
 
             if GearPath.currentClass and GearPath.currentSpec then
-                tooltip:AddLine(GearPath.Detection:GetSummary(), 1, 1, 1)
+                tooltip:AddLine(GearPath.Detection:GetSummary(), unpack(T.color.textPrimary))
             end
 
             if GearPath.PriorityEngine then
                 local top = GearPath.PriorityEngine:GetTop(1)
                 if top and top[1] then
                     tooltip:AddLine(" ")
-                    tooltip:AddLine("Top priority:", 0.9, 0.9, 0.3)
+                    tooltip:AddLine("Top priority:", unpack(T.color.accentGold))
                     tooltip:AddLine(
                         top[1].name .. " (" .. top[1].missingCount .. " item(s))",
-                        1, 1, 1
+                        unpack(T.color.textPrimary)
                     )
                 else
-                    tooltip:AddLine("No missing BiS items!", 0.3, 1, 0.3)
+                    tooltip:AddLine("No missing BiS items!", unpack(T.color.statusEquipped))
                 end
             end
 
             tooltip:AddLine(" ")
-            tooltip:AddLine("Left-click to open", 0.7, 0.7, 0.7)
-            tooltip:AddLine("Right-click for settings", 0.7, 0.7, 0.7)
+            tooltip:AddLine("Left-click to open", unpack(T.color.textMuted))
         end,
     })
 

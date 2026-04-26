@@ -6,14 +6,11 @@ local VaultTab = GearPath.VaultTab
 
 local container = nil
 
-local TYPE_COLORS = {
-    [1] = { 0.4, 0.8, 1.0 },  -- M+    blue
-    [2] = { 1.0, 0.5, 0.2 },  -- Raid  orange
-    [3] = { 0.6, 1.0, 0.4 },  -- World green
+local VAULT_COLOR_KEYS = {
+    [1] = "sourceDungeon",  -- M+
+    [2] = "sourceRaid",     -- Raid
+    [3] = "sourceWorld",    -- World / Delve
 }
-
-local LOCK_COLOR   = { 0.5, 0.5, 0.5 }
-local UNLOCK_COLOR = { 1.0, 0.82, 0.0 }
 
 function VaultTab:Show(parent)
     if not container then
@@ -41,6 +38,8 @@ end
 function VaultTab:Refresh()
     if not container or not container:IsShown() then return end
 
+    local T = GearPath.Theme
+
     local child = container.child
     -- Clear all children
     for _, f in pairs({ child:GetChildren() }) do
@@ -60,12 +59,12 @@ function VaultTab:Refresh()
         return
     end
 
-    local yOffset = -8
+    local yOffset = -T.space.sm
     yOffset = self:DrawProgressSection(child, advisor, yOffset)
-    yOffset = yOffset - 12
+    yOffset = yOffset - T.space.md
     yOffset = self:DrawRecommendationsSection(child, advisor, yOffset)
 
-    child:SetHeight(math.abs(yOffset) + 16)
+    child:SetHeight(math.abs(yOffset) + T.space.lg)
 end
 
 -- ============================================================
@@ -73,12 +72,14 @@ end
 -- ============================================================
 
 function VaultTab:DrawProgressSection(child, advisor, yOffset)
+    local T = GearPath.Theme
+
     -- Section header
-    local header = child:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    header:SetPoint("TOPLEFT", child, "TOPLEFT", 4, yOffset)
-    header:SetText("WEEKLY PROGRESS")
-    header:SetTextColor(0.6, 0.6, 0.6)
-    yOffset = yOffset - 18
+    local header = child:CreateFontString(nil, "OVERLAY", T.font.label)
+    header:SetPoint("TOPLEFT", child, "TOPLEFT", T.space.xs, yOffset)
+    header:SetText("Weekly Progress")
+    header:SetTextColor(unpack(T.color.accentGold))
+    yOffset = yOffset - 18  -- post-header gap
 
     -- Group slots by type
     local byType = {}
@@ -100,15 +101,16 @@ function VaultTab:DrawProgressSection(child, advisor, yOffset)
 end
 
 function VaultTab:DrawActivityRow(child, typeID, slots, yOffset)
-    local color = TYPE_COLORS[typeID] or { 1, 1, 1 }
+    local T = GearPath.Theme
+    local color = T.color[VAULT_COLOR_KEYS[typeID]] or T.color.textPrimary
     local label = slots[1] and slots[1].typeLabel or "Unknown"
 
     -- Category label
-    local catLabel = child:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    catLabel:SetPoint("TOPLEFT", child, "TOPLEFT", 4, yOffset)
+    local catLabel = child:CreateFontString(nil, "OVERLAY", T.font.body)
+    catLabel:SetPoint("TOPLEFT", child, "TOPLEFT", T.space.xs, yOffset)
     catLabel:SetText(label)
     catLabel:SetTextColor(color[1], color[2], color[3])
-    yOffset = yOffset - 18
+    yOffset = yOffset - 18  -- post-header gap
 
     -- Sort slots by index
     table.sort(slots, function(a, b) return a.slotIndex < b.slotIndex end)
@@ -116,40 +118,40 @@ function VaultTab:DrawActivityRow(child, typeID, slots, yOffset)
     for _, slot in ipairs(slots) do
         -- Slot background
         local row = CreateFrame("Frame", nil, child, "BackdropTemplate")
-        row:SetPoint("TOPLEFT", child, "TOPLEFT", 4, yOffset)
-        row:SetPoint("TOPRIGHT", child, "TOPRIGHT", -4, yOffset)
-        row:SetHeight(24)
+        row:SetPoint("TOPLEFT", child, "TOPLEFT", T.space.xs, yOffset)
+        row:SetPoint("TOPRIGHT", child, "TOPRIGHT", -T.space.xs, yOffset)
+        row:SetHeight(T.size.rowHeightVault)
         row:SetBackdrop({
             bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
             tile = true, tileSize = 16,
             insets = { left = 2, right = 2, top = 2, bottom = 2 },
         })
-        row:SetBackdropColor(0.08, 0.08, 0.12, 0.9)
+        row:SetBackdropColor(unpack(T.color.bgSurface))
 
         -- Slot number
-        local slotNum = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        local slotNum = row:CreateFontString(nil, "OVERLAY", T.font.body)
         slotNum:SetPoint("LEFT", row, "LEFT", 6, 0)
         slotNum:SetText("Slot " .. slot.slotIndex)
-        slotNum:SetTextColor(0.6, 0.6, 0.6)
+        slotNum:SetTextColor(unpack(T.color.textMuted))
         slotNum:SetWidth(44)
 
         -- Lock/unlock icon
-        local lockIcon = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        lockIcon:SetPoint("LEFT", slotNum, "RIGHT", 4, 0)
+        local lockIcon = row:CreateFontString(nil, "OVERLAY", T.font.body)
+        lockIcon:SetPoint("LEFT", slotNum, "RIGHT", T.space.xs, 0)
         if slot.unlocked then
             lockIcon:SetText("✓")
-            lockIcon:SetTextColor(UNLOCK_COLOR[1], UNLOCK_COLOR[2], UNLOCK_COLOR[3])
+            lockIcon:SetTextColor(unpack(T.color.accentGold))
         else
             lockIcon:SetText("✗")
-            lockIcon:SetTextColor(LOCK_COLOR[1], LOCK_COLOR[2], LOCK_COLOR[3])
+            lockIcon:SetTextColor(unpack(T.color.textMuted))
         end
-        lockIcon:SetWidth(14)
+        lockIcon:SetWidth(T.size.statusIcon)
 
         -- Progress bar background
         local barBg = row:CreateTexture(nil, "BACKGROUND")
         barBg:SetPoint("LEFT", lockIcon, "RIGHT", 6, 0)
         barBg:SetPoint("RIGHT", row, "RIGHT", -70, 0)
-        barBg:SetHeight(8)
+        barBg:SetHeight(T.size.barHeightSmall)
         barBg:SetColorTexture(0.15, 0.15, 0.15, 1)
 
         -- Progress bar fill
@@ -158,7 +160,7 @@ function VaultTab:DrawActivityRow(child, typeID, slots, yOffset)
 
         local barFill = row:CreateTexture(nil, "ARTWORK")
         barFill:SetPoint("LEFT", barBg, "LEFT", 0, 0)
-        barFill:SetHeight(8)
+        barFill:SetHeight(T.size.barHeightSmall)
         if slot.unlocked then
             barFill:SetColorTexture(color[1] * 0.8, color[2] * 0.8, color[3] * 0.8, 0.9)
         else
@@ -170,23 +172,23 @@ function VaultTab:DrawActivityRow(child, typeID, slots, yOffset)
         end)
 
         -- Progress text
-        local progText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        progText:SetPoint("LEFT", barBg, "LEFT", 4, 0)
+        local progText = row:CreateFontString(nil, "OVERLAY", T.font.body)
+        progText:SetPoint("LEFT", barBg, "LEFT", T.space.xs, 0)
         progText:SetText(string.format("%d / %d", slot.progress, slot.threshold))
-        progText:SetTextColor(0.9, 0.9, 0.9)
+        progText:SetTextColor(unpack(T.color.textSecondary))
 
         -- Ilvl label
-        local ilvlText = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        local ilvlText = row:CreateFontString(nil, "OVERLAY", T.font.body)
         ilvlText:SetPoint("RIGHT", row, "RIGHT", -6, 0)
         if slot.unlocked then
             ilvlText:SetText(string.format("ilvl %d", slot.itemLevel))
-            ilvlText:SetTextColor(UNLOCK_COLOR[1], UNLOCK_COLOR[2], UNLOCK_COLOR[3])
+            ilvlText:SetTextColor(unpack(T.color.accentGold))
         else
             ilvlText:SetText(string.format("ilvl %d", slot.itemLevel))
-            ilvlText:SetTextColor(0.4, 0.4, 0.4)
+            ilvlText:SetTextColor(unpack(T.color.textDisabled))
         end
 
-        yOffset = yOffset - 26
+        yOffset = yOffset - (T.size.rowHeightVault + 2)
     end
 
     return yOffset
@@ -197,11 +199,13 @@ end
 -- ============================================================
 
 function VaultTab:DrawRecommendationsSection(child, advisor, yOffset)
-    local header = child:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    header:SetPoint("TOPLEFT", child, "TOPLEFT", 4, yOffset)
-    header:SetText("VAULT RECOMMENDATIONS")
-    header:SetTextColor(0.6, 0.6, 0.6)
-    yOffset = yOffset - 18
+    local T = GearPath.Theme
+
+    local header = child:CreateFontString(nil, "OVERLAY", T.font.label)
+    header:SetPoint("TOPLEFT", child, "TOPLEFT", T.space.xs, yOffset)
+    header:SetText("Vault Recommendations")
+    header:SetTextColor(unpack(T.color.accentGold))
+    yOffset = yOffset - 18  -- post-header gap
 
     local recs = advisor:GetRankedRecommendations()
 
@@ -210,7 +214,7 @@ function VaultTab:DrawRecommendationsSection(child, advisor, yOffset)
         if rec.slot.unlocked then
             hasAny = true
             yOffset = self:DrawRecommendationRow(child, rec, yOffset)
-            yOffset = yOffset - 4
+            yOffset = yOffset - T.space.xs
         end
     end
 
@@ -219,48 +223,50 @@ function VaultTab:DrawRecommendationsSection(child, advisor, yOffset)
     for _, rec in ipairs(recs) do
         if not rec.slot.unlocked then
             if not needsHeader then
-                yOffset = yOffset - 8
-                local subHeader = child:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-                subHeader:SetPoint("TOPLEFT", child, "TOPLEFT", 4, yOffset)
-                subHeader:SetText("STILL LOCKED — COMPLETE MORE ACTIVITIES")
-                subHeader:SetTextColor(0.5, 0.5, 0.5)
-                yOffset = yOffset - 18
+                yOffset = yOffset - T.space.sm
+                local subHeader = child:CreateFontString(nil, "OVERLAY", T.font.body)
+                subHeader:SetPoint("TOPLEFT", child, "TOPLEFT", T.space.xs, yOffset)
+                subHeader:SetText("Still Locked — Complete More Activities")
+                subHeader:SetTextColor(unpack(T.color.textMuted))
+                yOffset = yOffset - 18  -- post-header gap
                 needsHeader = true
             end
             yOffset = self:DrawLockedRow(child, rec, yOffset)
-            yOffset = yOffset - 4
+            yOffset = yOffset - T.space.xs
         end
     end
 
     if not hasAny and not needsHeader then
-        local empty = child:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-        empty:SetPoint("TOPLEFT", child, "TOPLEFT", 4, yOffset)
+        local empty = child:CreateFontString(nil, "OVERLAY", T.font.label)
+        empty:SetPoint("TOPLEFT", child, "TOPLEFT", T.space.xs, yOffset)
         empty:SetText("No vault slots unlocked this week yet.")
-        empty:SetTextColor(0.5, 0.5, 0.5)
-        yOffset = yOffset - 22
+        empty:SetTextColor(unpack(T.color.textMuted))
+        yOffset = yOffset - T.size.rowHeightStandard
     end
 
     return yOffset
 end
 
 function VaultTab:DrawRecommendationRow(child, rec, yOffset)
+    local T = GearPath.Theme
     local slot  = rec.slot
-    local color = TYPE_COLORS[slot.type] or { 1, 1, 1 }
+    local color = T.color[VAULT_COLOR_KEYS[slot.type]] or T.color.textPrimary
 
     local row = CreateFrame("Frame", nil, child, "BackdropTemplate")
-    row:SetPoint("TOPLEFT", child, "TOPLEFT", 4, yOffset)
-    row:SetPoint("TOPRIGHT", child, "TOPRIGHT", -4, yOffset)
+    row:SetPoint("TOPLEFT", child, "TOPLEFT", T.space.xs, yOffset)
+    row:SetPoint("TOPRIGHT", child, "TOPRIGHT", -T.space.xs, yOffset)
 
     local matchCount = #rec.bisMatches
     local rowHeight  = 28 + (math.min(matchCount, 3) * 18)
     row:SetHeight(rowHeight)
     row:SetBackdrop({
         bgFile   = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+        edgeFile = T.border.row.edgeFile,
         tile = true, tileSize = 16, edgeSize = 10,
-        insets = { left = 3, right = 3, top = 3, bottom = 3 },
+        insets = { left = T.border.row.insets[1], right = T.border.row.insets[2],
+                   top = T.border.row.insets[3], bottom = T.border.row.insets[4] },
     })
-    row:SetBackdropColor(0.08, 0.10, 0.14, 0.95)
+    row:SetBackdropColor(unpack(T.color.bgElevated))
 
     -- Color strip
     local strip = row:CreateTexture(nil, "ARTWORK")
@@ -270,43 +276,43 @@ function VaultTab:DrawRecommendationRow(child, rec, yOffset)
     strip:SetColorTexture(color[1], color[2], color[3], 0.9)
 
     -- Title: "M+ Slot 1 — ilvl 252"
-    local title = row:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    title:SetPoint("TOPLEFT", strip, "TOPRIGHT", 8, -6)
+    local title = row:CreateFontString(nil, "OVERLAY", T.font.label)
+    title:SetPoint("TOPLEFT", strip, "TOPRIGHT", T.space.sm, -6)
     title:SetText(string.format("%s  Slot %d", slot.typeLabel, slot.slotIndex))
-    title:SetTextColor(1, 1, 1)
+    title:SetTextColor(unpack(T.color.textPrimary))
 
-    local ilvlLabel = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    ilvlLabel:SetPoint("LEFT", title, "RIGHT", 8, 0)
+    local ilvlLabel = row:CreateFontString(nil, "OVERLAY", T.font.body)
+    ilvlLabel:SetPoint("LEFT", title, "RIGHT", T.space.sm, 0)
     ilvlLabel:SetText(string.format("ilvl %d", slot.itemLevel))
-    ilvlLabel:SetTextColor(UNLOCK_COLOR[1], UNLOCK_COLOR[2], UNLOCK_COLOR[3])
+    ilvlLabel:SetTextColor(unpack(T.color.accentGold))
 
     -- BiS matches
     if matchCount == 0 then
-        local noMatch = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        noMatch:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -4)
+        local noMatch = row:CreateFontString(nil, "OVERLAY", T.font.body)
+        noMatch:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -T.space.xs)
         noMatch:SetText("No missing BiS items for this vault type")
-        noMatch:SetTextColor(0.5, 0.5, 0.5)
+        noMatch:SetTextColor(unpack(T.color.textMuted))
     else
-        local countLabel = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        countLabel:SetPoint("RIGHT", row, "RIGHT", -8, 0)
+        local countLabel = row:CreateFontString(nil, "OVERLAY", T.font.body)
+        countLabel:SetPoint("RIGHT", row, "RIGHT", -T.space.sm, 0)
         countLabel:SetText(matchCount .. " BiS match" .. (matchCount ~= 1 and "es" or ""))
         countLabel:SetTextColor(color[1], color[2], color[3])
 
         local prevAnchor = title
         for i, match in ipairs(rec.bisMatches) do
             if i > 3 then break end
-            local itemLine = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+            local itemLine = row:CreateFontString(nil, "OVERLAY", T.font.body)
             itemLine:SetPoint("TOPLEFT", prevAnchor, "BOTTOMLEFT", 0, -2)
-            local statusColor = match.status == "MISSING" and { 1.0, 0.3, 0.3 } or { 1.0, 0.82, 0.0 }
+            local statusColor = match.status == "MISSING" and T.color.statusMissing or T.color.statusUpgradeable
             itemLine:SetText(string.format("  • %s", match.bisItem.itemName))
-            itemLine:SetTextColor(statusColor[1], statusColor[2], statusColor[3])
+            itemLine:SetTextColor(unpack(statusColor))
             prevAnchor = itemLine
         end
         if matchCount > 3 then
-            local more = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+            local more = row:CreateFontString(nil, "OVERLAY", T.font.body)
             more:SetPoint("TOPLEFT", prevAnchor, "BOTTOMLEFT", 0, -2)
             more:SetText(string.format("  + %d more...", matchCount - 3))
-            more:SetTextColor(0.5, 0.5, 0.5)
+            more:SetTextColor(unpack(T.color.textMuted))
         end
     end
 
@@ -315,39 +321,42 @@ function VaultTab:DrawRecommendationRow(child, rec, yOffset)
 end
 
 function VaultTab:DrawLockedRow(child, rec, yOffset)
+    local T = GearPath.Theme
     local slot  = rec.slot
-    local color = TYPE_COLORS[slot.type] or { 1, 1, 1 }
+    local color = T.color[VAULT_COLOR_KEYS[slot.type]] or T.color.textPrimary
 
     local row = CreateFrame("Frame", nil, child, "BackdropTemplate")
-    row:SetPoint("TOPLEFT", child, "TOPLEFT", 4, yOffset)
-    row:SetPoint("TOPRIGHT", child, "TOPRIGHT", -4, yOffset)
-    row:SetHeight(24)
+    row:SetPoint("TOPLEFT", child, "TOPLEFT", T.space.xs, yOffset)
+    row:SetPoint("TOPRIGHT", child, "TOPRIGHT", -T.space.xs, yOffset)
+    row:SetHeight(T.size.rowHeightVault)
     row:SetBackdrop({
         bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
         tile = true, tileSize = 16,
-        insets = { left = 3, right = 3, top = 3, bottom = 3 },
+        insets = { left = T.border.rowFlat.insets[1], right = T.border.rowFlat.insets[2],
+                   top = T.border.rowFlat.insets[3], bottom = T.border.rowFlat.insets[4] },
     })
-    row:SetBackdropColor(0.06, 0.06, 0.08, 0.8)
+    row:SetBackdropColor(unpack(T.color.bgDisabled))
 
-    local label = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    label:SetPoint("LEFT", row, "LEFT", 8, 0)
+    local label = row:CreateFontString(nil, "OVERLAY", T.font.body)
+    label:SetPoint("LEFT", row, "LEFT", T.space.sm, 0)
     label:SetText(string.format("%s Slot %d — %d / %d needed",
         slot.typeLabel, slot.slotIndex, slot.progress, slot.threshold))
-    label:SetTextColor(0.45, 0.45, 0.45)
+    label:SetTextColor(unpack(T.color.textDisabled))
 
-    local ilvlLabel = row:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    ilvlLabel:SetPoint("RIGHT", row, "RIGHT", -8, 0)
+    local ilvlLabel = row:CreateFontString(nil, "OVERLAY", T.font.body)
+    ilvlLabel:SetPoint("RIGHT", row, "RIGHT", -T.space.sm, 0)
     ilvlLabel:SetText(string.format("ilvl %d", slot.itemLevel))
-    ilvlLabel:SetTextColor(0.35, 0.35, 0.35)
+    ilvlLabel:SetTextColor(unpack(T.color.textDisabled))
 
-    yOffset = yOffset - 26
+    yOffset = yOffset - (T.size.rowHeightVault + 2)
     return yOffset
 end
 
 function VaultTab:ShowUnavailable(child)
-    local label = child:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    local T = GearPath.Theme
+    local label = child:CreateFontString(nil, "OVERLAY", T.font.label)
     label:SetPoint("TOP", child, "TOP", 0, -40)
     label:SetText("Vault data unavailable.\n\nOpen the Great Vault (H) to load your weekly progress,\nthen reopen GearPath.")
-    label:SetTextColor(0.5, 0.5, 0.5)
+    label:SetTextColor(unpack(T.color.textMuted))
     label:SetJustifyH("CENTER")
 end

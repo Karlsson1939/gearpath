@@ -29,13 +29,13 @@ Modules\PriorityEngine.lua
 Modules\VaultAdvisor.lua
 
 # UI
+UI\Theme.lua
 UI\MinimapButton.lua
 UI\MainFrame.lua
 UI\PriorityTab.lua
 UI\BiSTab.lua
 UI\StatsTab.lua
 UI\VaultTab.lua
-UI\Config.lua
 
 # Data
 Data\SlotWeights.lua
