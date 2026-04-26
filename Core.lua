@@ -115,6 +115,9 @@ function GearPath:OnVaultUpdate()
     if GearPath.VaultAdvisor then
         GearPath.VaultAdvisor:Refresh()
     end
+    if GearPath.VaultTab then
+        GearPath.VaultTab:Refresh()
+    end
 end
 
 local itemInfoPending = false

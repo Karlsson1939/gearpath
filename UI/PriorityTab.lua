@@ -116,6 +116,17 @@ function PriorityTab:DrawProgressBar()
     container.progressCount:SetTextColor(1.0, 0.82, 0.0)
 end
 
+function PriorityTab:RepositionRows()
+    local ROW_GAP = 6
+    local yOffset = -36
+    for _, r in ipairs(rows) do
+        r:ClearAllPoints()
+        r:SetPoint("TOPLEFT", container, "TOPLEFT", 0, yOffset)
+        r:SetPoint("TOPRIGHT", container, "TOPRIGHT", 0, yOffset)
+        yOffset = yOffset - r:GetHeight() - ROW_GAP
+    end
+end
+
 function PriorityTab:CreateSourceRow(parent, sourceData, index, yOffset)
     local ROW_HEIGHT  = 52
     local ITEM_HEIGHT = 20
@@ -262,7 +273,7 @@ function PriorityTab:CreateSourceRow(parent, sourceData, index, yOffset)
             chevron:SetText("▼")
             expanded = false
         end
-        PriorityTab:Refresh()
+        PriorityTab:RepositionRows()
     end)
 
     row:SetScript("OnEnter", function(r)

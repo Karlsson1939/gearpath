@@ -31,7 +31,6 @@ function Detection:Detect(callback)
     local _, classFile = UnitClass("player")
 
     if not classFile then
-        GearPath:Print("[Detection] Could not read player class.")
         return
     end
 
@@ -85,15 +84,6 @@ function Detection:Detect(callback)
     GearPath.currentSpecDisplay       = specName
     GearPath.currentHeroTalent        = normalizedHeroTalent
     GearPath.currentHeroTalentDisplay = heroTalentDisplay
-
-    if heroTalentDisplay then
-        GearPath:Print(string.format("[Detection] Detected: %s %s (%s) [keys: %s / %s]",
-            specName, classDisplayNames[classFile] or classFile,
-            heroTalentDisplay, normalizedSpec, normalizedHeroTalent))
-    else
-        GearPath:Print(string.format("[Detection] Detected: %s %s (no hero talent selected) [key: %s]",
-            specName, classDisplayNames[classFile] or classFile, normalizedSpec))
-    end
 
     if callback then
         callback(classFile, normalizedSpec, normalizedHeroTalent)
