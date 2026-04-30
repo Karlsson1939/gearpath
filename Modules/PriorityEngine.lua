@@ -7,6 +7,15 @@ local PriorityEngine = GearPath.PriorityEngine
 PriorityEngine.rankedSources = {}
 PriorityEngine.missingItems  = {}
 
+function PriorityEngine:ScoreItem(slotID, bisItem)
+    local slotWeights = GearPath.db.profile.slotWeights
+    local defaults    = GearPath.DefaultSlotWeights or {}
+    local weight = (slotWeights and slotWeights[slotID])
+        or defaults[slotID]
+        or 1.0
+    return bisItem.priority * weight
+end
+
 function PriorityEngine:Rebuild()
     self.rankedSources = {}
     self.missingItems  = {}
@@ -14,10 +23,8 @@ function PriorityEngine:Rebuild()
     local bisSet = GearPath:GetBiSForCurrentSpec()
     if not bisSet then return end
 
-    local slotWeights = GearPath.db.profile.slotWeights
-    local defaults    = GearPath.DefaultSlotWeights or {}
-    local scanner     = GearPath.GearScanner
-    local filters     = GearPath.db.profile.filters
+    local scanner = GearPath.GearScanner
+    local filters = GearPath.db.profile.filters
 
     local sources = {}
 
@@ -26,11 +33,7 @@ function PriorityEngine:Rebuild()
             local status = self:GetSlotStatus(slotID, bisItem, scanner)
 
             if status == "MISSING" or status == "UPGRADEABLE" then
-                local weight = (slotWeights and slotWeights[slotID])
-                    or defaults[slotID]
-                    or 1.0
-
-                local score = bisItem.priority * weight
+                local score = self:ScoreItem(slotID, bisItem)
                 local sourceKey = bisItem.source
 
                 if not sources[sourceKey] then
