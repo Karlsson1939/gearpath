@@ -4,7 +4,7 @@
 GearPath.GearScanner = {}
 local GearScanner = GearPath.GearScanner
 
-local SLOT_NAMES = {
+GearScanner.SLOT_NAMES = {
     [1]  = "Head",
     [2]  = "Neck",
     [3]  = "Shoulders",
@@ -68,7 +68,7 @@ function GearScanner:GetIlvlFromLink(itemLink)
 end
 
 function GearScanner:ScanEquipped()
-    for slotID, slotName in pairs(SLOT_NAMES) do
+    for slotID, slotName in pairs(self.SLOT_NAMES) do
         local itemID   = GetInventoryItemID("player", slotID)
         local itemLink = GetInventoryItemLink("player", slotID)
         local ilvl     = 0

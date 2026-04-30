@@ -53,7 +53,6 @@ function GearPath:OnEnable()
     self:RegisterEvent("PLAYER_LEVEL_UP", "OnPlayerLevelUp")
     self:RegisterEvent("PLAYER_EQUIPMENT_CHANGED", "OnEquipmentChanged")
     self:RegisterEvent("BAG_UPDATE", "OnBagUpdate")
-    self:RegisterEvent("WEEKLY_REWARDS_UPDATE", "OnVaultUpdate")
     -- Re-scan when item cache populates (fires after uncached GetItemInfo resolves)
     self:RegisterEvent("GET_ITEM_INFO_RECEIVED", "OnItemInfoReceived")
 
@@ -112,15 +111,6 @@ function GearPath:ScheduleGearUpdate()
         gearUpdateTimer = nil
         GearPath:RebuildPriority()
     end)
-end
-
-function GearPath:OnVaultUpdate()
-    if GearPath.VaultAdvisor then
-        GearPath.VaultAdvisor:Refresh()
-    end
-    if GearPath.VaultTab then
-        GearPath.VaultTab:Refresh()
-    end
 end
 
 local itemInfoPending = false
@@ -235,6 +225,10 @@ function GearPath:RebuildPriority()
         GearPath.PriorityEngine:Rebuild()
     end
 
+    if GearPath.UpgradeShortlist then
+        GearPath.UpgradeShortlist:Build()
+    end
+
     if GearPath.MainFrame and GearPath.MainFrame:IsShown() then
         GearPath.MainFrame:Refresh()
     end
@@ -260,8 +254,8 @@ function GearPath:SlashCommand(input)
             GearPath.GearScanner:PrintSummary()
         end
     elseif input == "vault" then
-        if GearPath.VaultAdvisor then
-            GearPath.VaultAdvisor:PrintSummary()
+        if GearPath.UpgradeShortlist then
+            GearPath.UpgradeShortlist:PrintSummary()
         end
     elseif input == "reset" then
         if GearPath.MainFrame then
@@ -284,7 +278,7 @@ function GearPath:SlashCommand(input)
         self:Print("  /gp           Toggle the main panel")
         self:Print("  /gp priority  Print top priority sources to chat")
         self:Print("  /gp bis       Print equipped gear summary to chat")
-        self:Print("  /gp vault     Print vault summary to chat")
+        self:Print("  /gp vault     Print top upgrade gaps to chat")
         self:Print("  /gp status    Show current detection state")
         self:Print("  /gp reset     Reset panel position")
     end
