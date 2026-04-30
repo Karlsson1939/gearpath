@@ -27,7 +27,7 @@ Core.lua
 Modules\Detection.lua
 Modules\GearScanner.lua
 Modules\PriorityEngine.lua
-Modules\VaultAdvisor.lua
+Modules\UpgradeShortlist.lua
 
 # UI
 UI\Theme.lua

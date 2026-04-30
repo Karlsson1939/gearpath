@@ -76,7 +76,7 @@ function MainFrame:Create()
         "Ranked content sources for your missing BiS gear",
         "Best in Slot items with equipped/upgrade status",
         "Stat priorities, gems, enchants, and consumables",
-        "Weekly Great Vault progress and recommendations",
+        "Top upgrade gaps for your Vault picks",
     }
     for i, label in ipairs(tabLabels) do
         local tab = CreateFrame("Button", "GearPathTab" .. i, frame)
